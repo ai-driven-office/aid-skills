@@ -3,7 +3,7 @@
 ## Setup & Basic Structure
 
 ```javascript
-const pptxgen = require("pptxgenjs");
+const pptxgen = require("pptxgenjs"); // Use always latest version
 
 let pres = new pptxgen();
 pres.layout = 'LAYOUT_16x9';  // or 'LAYOUT_16x10', 'LAYOUT_4x3', 'LAYOUT_WIDE'
@@ -11,7 +11,7 @@ pres.author = 'Your Name';
 pres.title = 'Presentation Title';
 
 let slide = pres.addSlide();
-slide.addText("Hello World!", { x: 0.5, y: 0.5, fontSize: 36, color: "363636" });
+slide.addText("Hello World!", { x: 0.5, y: 0.5, fontSize: 24, fontFace: "M PLUS 1p", color: "000000", bold: true });
 
 pres.writeFile({ fileName: "Presentation.pptx" });
 ```
@@ -29,10 +29,10 @@ Slide dimensions (coordinates in inches):
 ## Text & Formatting
 
 ```javascript
-// Basic text
+// Basic text (CA standard: M PLUS 1p for Japanese, Arial for English)
 slide.addText("Simple Text", {
-  x: 1, y: 1, w: 8, h: 2, fontSize: 24, fontFace: "Arial",
-  color: "363636", bold: true, align: "center", valign: "middle"
+  x: 1, y: 1, w: 8, h: 2, fontSize: 18, fontFace: "Arial",
+  color: "000000", bold: true, align: "left", valign: "middle"
 });
 
 // Character spacing (use charSpacing, not letterSpacing which is silently ignored)

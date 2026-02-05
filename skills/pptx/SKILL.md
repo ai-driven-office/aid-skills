@@ -59,9 +59,38 @@ Use when no template or reference presentation is available.
 - **Dark/light contrast**: Dark backgrounds for title + conclusion slides, light for content ("sandwich" structure). Or commit to dark throughout for a premium feel.
 - **Commit to a visual motif**: Pick ONE distinctive element and repeat it — rounded image frames, icons in colored circles, thick single-side borders. Carry it across every slide.
 
-### Color Palettes (Spindle Design System)
+### Color Palettes
 
-CyberAgent's official Spindle design system palettes. Note: PPTX hex codes omit the `#` prefix.
+Note: PPTX hex codes omit the `#` prefix.
+
+**Default: CyberAgent Official Slide Colors** (from the official slide guideline template)
+
+| Role | Color | Hex |
+|------|-------|-----|
+| Background — White | White | `ffffff` |
+| Background — Gray | Light Gray | `F0F1F1` |
+| Background — Green | Pale Green | `E7F5E9` |
+| Accent | Yellow Green | `82be28` |
+| Text — Primary | Black | `000000` |
+| Text — Emphasis | Green | `298737` |
+| Text — Secondary | Gray | `485055` |
+
+Use this palette by default for all CyberAgent presentations. Limit colors and use green as the base accent for visual consistency.
+
+**AID (AI Driven Office) Override** — when creating for AIドリブン推進室
+
+| Role | Color | Hex |
+|------|-------|-----|
+| Background — White | White | `ffffff` |
+| Background — Dark | Near Black | `0A0A0A` |
+| Accent — Primary | AID Blue | `3370FE` |
+| Accent — Secondary | AID Red | `FF0413` |
+| Accent — Midpoint | AID Magenta | `E0247A` |
+| Text — Primary (light bg) | Black | `000000` |
+| Text — Primary (dark bg) | White | `ffffff` |
+| Gradient | Blue → Red | `linear-gradient(135deg, 3370FE, FF0413)` |
+
+**Spindle Design System Themes** (for topic-specific presentations)
 
 | Theme | Primary | Secondary | Accent | Background | Text |
 |-------|---------|-----------|--------|------------|------|
@@ -95,47 +124,58 @@ CyberAgent's official Spindle design system palettes. Note: PPTX hex codes omit 
 - Icons in small colored circles next to section headers
 - Italic accent text for key stats or taglines
 
-### Typography (CyberAgent/Spindle)
+### Typography (CyberAgent Official)
 
-**For Japanese content:**
+**Primary fonts** (from the official CA slide guideline):
 
-| Element | Font | Size |
+| Context | Font | Type |
 |---------|------|------|
-| Slide Title | Meiryo (Bold) | 36-44pt |
-| Section Header | Meiryo (Bold) | 20-24pt |
-| Body Text | Meiryo | 14-16pt |
-| Captions | Meiryo | 10-12pt |
-| Fallback | Yu Gothic Medium, system-ui | — |
+| Japanese text | **M PLUS 1p** | Google Font — gothic sans-serif. Must be installed. |
+| English text | **Arial** | System font — cross-platform compatible. |
 
-**For English content:**
+M PLUS 1p is the official CA presentation font. It requires installation from Google Fonts. If unavailable, fall back to Meiryo (Bold for headers).
 
-| Element | Font | Size |
-|---------|------|------|
-| Slide Title | Arial Black | 36-44pt |
-| Section Header | Calibri Bold | 20-24pt |
-| Body Text | Calibri | 14-16pt |
-| Captions | Calibri | 10-12pt |
+**Text sizes** (official CA recommended scale):
 
-**Additional pairings:**
+| Element | Size | Weight |
+|---------|------|--------|
+| ワンセンテンス (Headline) | 24pt | Bold |
+| 大見出し (Major Heading) | 18pt | Bold |
+| 中見出し (Sub-Heading) | 14pt | Bold |
+| 文章 (Body Text) | 12pt | Regular |
+| 注釈 (Notes/Captions) | 8pt | Regular |
 
-| Header Font | Body Font |
-|-------------|-----------|
-| Meiryo Bold | Meiryo |
-| Arial Black | Calibri |
-| Calibri Bold | Calibri Light |
-| Georgia | Calibri |
+Recommended size stops: **8, 12, 14, 18, 24** pt. Adjust as needed for the slide design, but prefer these values.
 
-### Spacing
+**Emphasis**: Use green text (`298737`) for key terms you want to highlight — not bold alone.
 
-- 0.5" minimum margins
+### Spacing & Layout
+
+- **30px (~0.42") minimum margins** on all four sides (CA guideline standard)
 - 0.3-0.5" between content blocks
-- Leave breathing room—don't fill every inch
+- Leave breathing room — don't fill every inch
+- **Line spacing**: 1.15 lines (CA standard for Google Slides; adjust for PPT if needed)
+- **Text alignment**: Left-align by default. Center only for titles and short single-line text.
+- **Headings**: Keep to 1 line. Max 4-5 points per slide.
+- **Supplementary text**: Use smaller font (8pt notes) below headings
+
+### Slide Structure (CA Template Pattern)
+
+Follow the official CA slide template layout:
+
+- **Title slide**: CyberAgent logo (top-left), large title text, subtitle, date (`YYYY.MM.DD`), copyright footer
+- **Agenda slide**: Green "AGENDA" header + numbered items (green `01`, `02`, etc.)
+- **Section divider**: Green section number + title, centered vertically on white background
+- **Content slides**: Section header bar at top (`NN` | `セクション名` with green vertical bar separator), content below
+- **Footer**: `©CyberAgent, Inc. All Rights Reserved` centered at bottom, page number bottom-right
+- **Confidential slides**: Add `CONFIDENTIAL` badge (outlined box) at top-right when applicable
+- **Closing slide**: Centered CyberAgent logo on white background
 
 ### Avoid (Common Mistakes)
 
 - **Don't repeat the same layout** — vary columns, cards, and callouts across slides
 - **Don't center body text** — left-align paragraphs and lists; center only titles
-- **Don't skimp on size contrast** — titles need 36pt+ to stand out from 14-16pt body
+- **Don't skimp on size contrast** — titles need 18-24pt to stand out from 12pt body
 - **Don't default to blue** — pick colors that reflect the specific topic
 - **Don't mix spacing randomly** — choose 0.3" or 0.5" gaps and use consistently
 - **Don't style one slide and leave the rest plain** — commit fully or keep it simple throughout
@@ -184,7 +224,7 @@ Look for:
 - Source citations or footers colliding with content above
 - Elements too close (< 0.3" gaps) or cards/sections nearly touching
 - Uneven gaps (large empty area in one place, cramped in another)
-- Insufficient margin from slide edges (< 0.5")
+- Insufficient margin from slide edges (< 0.42" / 30px)
 - Columns or similar elements not aligned consistently
 - Low-contrast text (e.g., light gray text on cream-colored background)
 - Low-contrast icons (e.g., dark icons on dark backgrounds without a contrasting circle)
@@ -228,6 +268,18 @@ To re-render specific slides after fixes:
 ```bash
 pdftoppm -jpeg -r 150 -f N -l N output.pdf slide-fixed
 ```
+
+---
+
+## Reference Files
+
+| File | Content |
+|------|---------|
+| `reference/cyberagent_guideline_slide_template.pptx` | Official CA slide template — use as base for template-based editing |
+| `reference/cyberagent_guideline_slide_template.pdf` | PDF version for visual reference |
+| `reference/ca-slide-template.md` | Extracted specs: slide types, layout patterns, colors, typography |
+
+When creating from scratch, follow the CA slide template patterns documented in `reference/ca-slide-template.md`. When editing from a template, prefer using `cyberagent_guideline_slide_template.pptx` as the base.
 
 ---
 
