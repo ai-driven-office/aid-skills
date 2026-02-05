@@ -1,0 +1,80 @@
+skills/theme-factory/themes/ameba-green.md
+  94c81575ca358e39 1-20
+CLAUDE.md
+  cf134ac72459ee35 1-95
+skills/spindle-icons/SKILL.md
+  94c81575ca358e39 1-174
+skills/pptx/SKILL.md
+  94c81575ca358e39 62,64,66-77,98,100,102-119,123-125
+skills/theme-factory/themes/vibrant-energy.md
+  94c81575ca358e39 1-20
+skills/theme-factory/themes/dark-mode.md
+  94c81575ca358e39 1-20
+skills/theme-factory/themes/warm-sunset.md
+  94c81575ca358e39 1-20
+skills/theme-factory/themes/fresh-lime.md
+  94c81575ca358e39 1-20
+skills/ca-brand-guidelines/reference/colors.md
+  94c81575ca358e39 1-297
+skills/theme-factory/themes/teal-growth.md
+  94c81575ca358e39 1-20
+skills/ca-brand-guidelines/SKILL.md
+  94c81575ca358e39 1-99
+skills/ca-brand-guidelines/LICENSE.txt
+  94c81575ca358e39 1-26
+skills/canvas-design/SKILL.md
+  94c81575ca358e39 78-108
+skills/theme-factory/themes/deep-green.md
+  94c81575ca358e39 1-20
+skills/theme-factory/themes/uranai-purple.md
+  94c81575ca358e39 1-20
+skills/ca-brand-guidelines/reference/dark-theme.md
+  94c81575ca358e39 1-130
+skills/theme-factory/themes/ocean-digital.md
+  94c81575ca358e39 1-20
+skills/theme-factory/SKILL.md
+  94c81575ca358e39 3,10,30,32-41
+skills/theme-factory/themes/neutral-pro.md
+  94c81575ca358e39 1-20
+skills/spindle-icons/LICENSE.txt
+  94c81575ca358e39 1-46
+skills/spindle-icons/reference/icon-catalog.md
+  94c81575ca358e39 1-456
+skills/ca-brand-guidelines/reference/typography.md
+  94c81575ca358e39 1-154
+skills/ca-brand-guidelines/reference/logos.md
+  94c81575ca358e39 1-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "c3822efe9cfe7508b993ff7451abbe4d52ff79a3",
+  "prompts": {
+    "94c81575ca358e39": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "168ed637-d252-4d51-ab43-ba470737465f",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 1924,
+      "total_deletions": 224,
+      "accepted_lines": 1740,
+      "overriden_lines": 1
+    },
+    "cf134ac72459ee35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6f297abe-7141-427f-a1cf-ab001a5e66a9",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 95,
+      "total_deletions": 0,
+      "accepted_lines": 95,
+      "overriden_lines": 0
+    }
+  }
+}
