@@ -1,11 +1,11 @@
 {
-  "name": "anthropic-agent-skills",
+  "name": "aid-skills",
   "owner": {
-    "name": "Keith Lazuka",
-    "email": "klazuka@anthropic.com"
+    "name": "CyberAgent AI Driven Office",
+    "email": "aid@cyberagent.co.jp"
   },
   "metadata": {
-    "description": "Anthropic example skills",
+    "description": "AID (AI Driven Office) Skills - Enterprise AI automation skills by CyberAgent",
     "version": "1.0.0"
   },
   "plugins": [
