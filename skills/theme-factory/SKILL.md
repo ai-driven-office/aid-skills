@@ -1,13 +1,13 @@
 ---
 name: theme-factory
-description: Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.
+description: Toolkit for styling artifacts with CyberAgent/Ameba Spindle design system themes. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts based on Spindle tokens that you can apply to any artifact, or can generate a new theme on-the-fly.
 license: Complete terms in LICENSE.txt
 ---
 
 
 # Theme Factory Skill
 
-This skill provides a curated collection of professional font and color themes themes, each with carefully selected color palettes and font pairings. Once a theme is chosen, it can be applied to any artifact.
+This skill provides a curated collection of professional font and color themes based on CyberAgent's Spindle design system. Each theme uses carefully selected color palettes from official Spindle tokens and Meiryo font pairings. Once a theme is chosen, it can be applied to any artifact.
 
 ## Purpose
 
@@ -27,18 +27,18 @@ To apply styling to a slide deck or other artifact:
 
 ## Themes Available
 
-The following 10 themes are available, each showcased in `theme-showcase.pdf`:
+The following 10 themes are available, each based on CyberAgent's Spindle design system:
 
-1. **Ocean Depths** - Professional and calming maritime theme
-2. **Sunset Boulevard** - Warm and vibrant sunset colors
-3. **Forest Canopy** - Natural and grounded earth tones
-4. **Modern Minimalist** - Clean and contemporary grayscale
-5. **Golden Hour** - Rich and warm autumnal palette
-6. **Arctic Frost** - Cool and crisp winter-inspired theme
-7. **Desert Rose** - Soft and sophisticated dusty tones
-8. **Tech Innovation** - Bold and modern tech aesthetic
-9. **Botanical Garden** - Fresh and organic garden colors
-10. **Midnight Galaxy** - Dramatic and cosmic deep tones
+1. **Ameba Green** - Official CyberAgent/Ameba brand theme with signature green
+2. **Fresh Lime** - Energetic, vibrant theme using Yellow Green accents
+3. **Deep Green** - Sophisticated, executive theme with dark green tones
+4. **Neutral Pro** - Clean, versatile theme with minimal color accents
+5. **Warm Sunset** - Warm, inviting theme with Expressive Orange palette
+6. **Ocean Digital** - Cool, trustworthy theme with Expressive Blue palette
+7. **Uranai Purple** - Mystical theme for the Uranai sub-brand
+8. **Teal Growth** - Fresh, modern theme with Expressive Teal palette
+9. **Vibrant Energy** - Bold, dynamic theme with Expressive Pink palette
+10. **Dark Mode** - Premium dark theme for high-impact presentations
 
 ## Theme Details
 

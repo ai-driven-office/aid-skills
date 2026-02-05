@@ -74,6 +74,38 @@ Visual expression: Grid-based precision, bold photography or stark graphics, dra
 
 *These are condensed examples. The actual design philosophy should be 4-6 substantial paragraphs.*
 
+### CYBERAGENT BRAND CONTEXT
+
+When creating for CyberAgent contexts, incorporate the Spindle design system:
+
+**Color DNA**:
+- Ameba Green (`#2d8c3c`) - Growth, vitality, digital nature
+- Yellow Green (`#82be28`) - Energy, freshness, innovation
+- Gray 100 (`#08121a`) - Professional restraint, grounding
+
+**Visual Character**:
+- Clean, minimal with purposeful green accents
+- Japanese aesthetic sensibility (ma/negative space)
+- Systematic grid-based layouts from Spindle UI
+
+**Typography Philosophy**:
+- Japanese-first: Meiryo, Yu Gothic Medium
+- System fonts for universal compatibility
+- Bold headers with clean body text
+
+### CYBERAGENT/AMEBA COLOR PALETTE
+
+| Use | Color | Hex |
+|-----|-------|-----|
+| Primary Accent | Ameba Green | `#2d8c3c` |
+| Secondary Accent | Yellow Green | `#82be28` |
+| Dark Background | Gray 100 | `#08121a` |
+| Light Background | Gray 5 | `#f5f6f6` |
+| Text High | Gray 100 | `#08121a` |
+| Caution | Caution Red | `#d91c0b` |
+| Info | Expressive Blue 50 | `#4da2d6` |
+| Success | Expressive Green 50 | `#00a688` |
+
 ### ESSENTIAL PRINCIPLES
 - **VISUAL PHILOSOPHY**: Create an aesthetic worldview to be expressed through design
 - **MINIMAL TEXT**: Always emphasize that text is sparse, essential-only, integrated as visual element - never lengthy

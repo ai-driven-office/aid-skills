@@ -59,22 +59,22 @@ Use when no template or reference presentation is available.
 - **Dark/light contrast**: Dark backgrounds for title + conclusion slides, light for content ("sandwich" structure). Or commit to dark throughout for a premium feel.
 - **Commit to a visual motif**: Pick ONE distinctive element and repeat it — rounded image frames, icons in colored circles, thick single-side borders. Carry it across every slide.
 
-### Color Palettes
+### Color Palettes (Spindle Design System)
 
-Choose colors that match your topic — don't default to generic blue. Use these palettes as inspiration:
+CyberAgent's official Spindle design system palettes. Note: PPTX hex codes omit the `#` prefix.
 
-| Theme | Primary | Secondary | Accent |
-|-------|---------|-----------|--------|
-| **Midnight Executive** | `1E2761` (navy) | `CADCFC` (ice blue) | `FFFFFF` (white) |
-| **Forest & Moss** | `2C5F2D` (forest) | `97BC62` (moss) | `F5F5F5` (cream) |
-| **Coral Energy** | `F96167` (coral) | `F9E795` (gold) | `2F3C7E` (navy) |
-| **Warm Terracotta** | `B85042` (terracotta) | `E7E8D1` (sand) | `A7BEAE` (sage) |
-| **Ocean Gradient** | `065A82` (deep blue) | `1C7293` (teal) | `21295C` (midnight) |
-| **Charcoal Minimal** | `36454F` (charcoal) | `F2F2F2` (off-white) | `212121` (black) |
-| **Teal Trust** | `028090` (teal) | `00A896` (seafoam) | `02C39A` (mint) |
-| **Berry & Cream** | `6D2E46` (berry) | `A26769` (dusty rose) | `ECE2D0` (cream) |
-| **Sage Calm** | `84B59F` (sage) | `69A297` (eucalyptus) | `50808E` (slate) |
-| **Cherry Bold** | `990011` (cherry) | `FCF6F5` (off-white) | `2F3C7E` (navy) |
+| Theme | Primary | Secondary | Accent | Background | Text |
+|-------|---------|-----------|--------|------------|------|
+| **Ameba Green** | `2d8c3c` | `e7f5e9` | `82be28` | `ffffff` | `08121a` |
+| **Deep Green** | `0f5c1f` | `c6e5c9` | `298737` | `ffffff` | `08121a` |
+| **Fresh Lime** | `82be28` | `f0f7e6` | `477d00` | `ffffff` | `08121a` |
+| **Uranai Purple** | `391e66` | `eee8f4` | `743faa` | `ffffff` | `08121a` |
+| **Ocean Digital** | `203957` | `e3f4fa` | `4da2d6` | `ffffff` | `08121a` |
+| **Teal Growth** | `003d2c` | `e0f5f1` | `00a688` | `ffffff` | `08121a` |
+| **Neutral Pro** | `08121a` | `f5f6f6` | `2d8c3c` | `ffffff` | `08121a` |
+| **Dark Mode** | `08121a` | `141e25` | `41ad4f` | `08121a` | `ffffff` |
+| **Warm Sunset** | `8a2701` | `f6e7e5` | `de4d14` | `ffffff` | `08121a` |
+| **Vibrant Pink** | `630f33` | `fce4e9` | `e02c53` | `ffffff` | `08121a` |
 
 ### For Each Slide
 
@@ -95,27 +95,35 @@ Choose colors that match your topic — don't default to generic blue. Use these
 - Icons in small colored circles next to section headers
 - Italic accent text for key stats or taglines
 
-### Typography
+### Typography (CyberAgent/Spindle)
 
-**Choose an interesting font pairing** — don't default to Arial. Pick a header font with personality and pair it with a clean body font.
+**For Japanese content:**
+
+| Element | Font | Size |
+|---------|------|------|
+| Slide Title | Meiryo (Bold) | 36-44pt |
+| Section Header | Meiryo (Bold) | 20-24pt |
+| Body Text | Meiryo | 14-16pt |
+| Captions | Meiryo | 10-12pt |
+| Fallback | Yu Gothic Medium, system-ui | — |
+
+**For English content:**
+
+| Element | Font | Size |
+|---------|------|------|
+| Slide Title | Arial Black | 36-44pt |
+| Section Header | Calibri Bold | 20-24pt |
+| Body Text | Calibri | 14-16pt |
+| Captions | Calibri | 10-12pt |
+
+**Additional pairings:**
 
 | Header Font | Body Font |
 |-------------|-----------|
+| Meiryo Bold | Meiryo |
+| Arial Black | Calibri |
+| Calibri Bold | Calibri Light |
 | Georgia | Calibri |
-| Arial Black | Arial |
-| Calibri | Calibri Light |
-| Cambria | Calibri |
-| Trebuchet MS | Calibri |
-| Impact | Arial |
-| Palatino | Garamond |
-| Consolas | Calibri |
-
-| Element | Size |
-|---------|------|
-| Slide title | 36-44pt bold |
-| Section header | 20-24pt bold |
-| Body text | 14-16pt |
-| Captions | 10-12pt muted |
 
 ### Spacing
 
