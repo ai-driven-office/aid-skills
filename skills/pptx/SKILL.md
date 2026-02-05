@@ -48,12 +48,43 @@ Use when no template or reference presentation is available.
 
 ---
 
+## Template Mode
+
+Presentations follow one of two brand templates. Determine which to use based on context:
+
+| Mode | When to Use | Template Spec |
+|------|-------------|---------------|
+| **CyberAgent** (default) | General CA presentations, cross-company materials, external stakeholder decks | [ca-slide-template.md](reference/ca-slide-template.md) |
+| **AID** | AIドリブン推進室 presentations, AI-focused internal decks, AID team materials | [aid-slide-template.md](reference/aid-slide-template.md) |
+
+**How to detect**: If the user mentions AID, AIドリブン推進室, AI Driven Office, or the content is specifically about AID initiatives, use the AID template. Otherwise default to CyberAgent.
+
+### What Changes Between Modes
+
+| Element | CyberAgent | AID |
+|---------|------------|-----|
+| Accent color | Green (`82be28` / `298737`) | Blue-to-Red gradient (`3370FE` → `FF0413`) |
+| Emphasis text | Green (`298737`) | AID Blue (`3370FE`) or AID Red (`FF0413`) |
+| Separator bars | Green solid | Blue-to-Red gradient |
+| Logo | CyberAgent logo (`reference/logos/cyberagent/`) | AID logomark (`reference/logos/aid/`) |
+| Title slide bg | White (default) | Dark `0A0A0A` (preferred) or white |
+| Callout boxes | Pale green `E7F5E9` | Light blue `E8EEFF` |
+| Section numbers | Green `298737` | AID Blue `3370FE` |
+| Footer | `©CyberAgent, Inc. All Rights Reserved` | `©CyberAgent, Inc. AIドリブン推進室` |
+| Dark slides | Blue-gray `1E2430` bg | Near-black `0A0A0A` bg |
+| Charts | Green shades | Blue, Red, Magenta, Purple |
+
+Typography, text sizes, spacing, and margins are shared between both modes.
+
+---
+
 ## Design Ideas
 
 **Don't create boring slides.** Plain bullets on a white background won't impress anyone. Consider ideas from this list for each slide.
 
 ### Before Starting
 
+- **Determine template mode**: CyberAgent (default) or AID — see [Template Mode](#template-mode) above. This sets your base palette, logos, and visual language.
 - **Pick a bold, content-informed color palette**: The palette should feel designed for THIS topic. If swapping your colors into a completely different presentation would still "work," you haven't made specific enough choices.
 - **Dominance over equality**: One color should dominate (60-70% visual weight), with 1-2 supporting tones and one sharp accent. Never give all colors equal weight.
 - **Dark/light contrast**: Dark backgrounds for title + conclusion slides, light for content ("sandwich" structure). Or commit to dark throughout for a premium feel.
@@ -147,7 +178,9 @@ M PLUS 1p is the official CA presentation font. It requires installation from Go
 
 Recommended size stops: **8, 12, 14, 18, 24** pt. Adjust as needed for the slide design, but prefer these values.
 
-**Emphasis**: Use green text (`298737`) for key terms you want to highlight — not bold alone.
+**Emphasis**: Use green text (`298737`) for key terms (CyberAgent mode) or AID Blue (`3370FE`) / AID Red (`FF0413`) for key terms (AID mode) — not bold alone.
+
+**AID display override**: For AID mode English headlines and display text, prefer **Inter Black** or **Archivo Black** (weight 900). Fall back to **Arial Black** if unavailable. Body text and Japanese text remain M PLUS 1p / Arial.
 
 ### Spacing & Layout
 
@@ -159,17 +192,30 @@ Recommended size stops: **8, 12, 14, 18, 24** pt. Adjust as needed for the slide
 - **Headings**: Keep to 1 line. Max 4-5 points per slide.
 - **Supplementary text**: Use smaller font (8pt notes) below headings
 
-### Slide Structure (CA Template Pattern)
+### Slide Structure
 
-Follow the official CA slide template layout:
+Follow the slide template layout for the selected mode. See the full spec in the template reference files.
+
+**CyberAgent mode** ([ca-slide-template.md](reference/ca-slide-template.md)):
 
 - **Title slide**: CyberAgent logo (top-left), large title text, subtitle, date (`YYYY.MM.DD`), copyright footer
 - **Agenda slide**: Green "AGENDA" header + numbered items (green `01`, `02`, etc.)
 - **Section divider**: Green section number + title, centered vertically on white background
 - **Content slides**: Section header bar at top (`NN` | `セクション名` with green vertical bar separator), content below
 - **Footer**: `©CyberAgent, Inc. All Rights Reserved` centered at bottom, page number bottom-right
-- **Confidential slides**: Add `CONFIDENTIAL` badge (outlined box) at top-right when applicable
+- **Confidential slides**: Add `CONFIDENTIAL` badge (outlined box, green border) at top-right
 - **Closing slide**: Centered CyberAgent logo on white background
+
+**AID mode** ([aid-slide-template.md](reference/aid-slide-template.md)):
+
+- **Title slide**: Dark bg (`0A0A0A`) preferred — AID logomark top-left, white title text, gradient bar accent
+- **Agenda slide**: "AGENDA" in AID Blue (`3370FE`), numbered items with blue numbers
+- **Section divider**: Dark or light — blue section number, optional gradient bar
+- **Content slides**: Section header with gradient vertical bar (blue-to-red) replacing green bar
+- **Key visual slide**: Full-bleed gradient background with large white headline
+- **"AI := ___" slide**: Expandable logo format for campaign/event themes
+- **Footer**: `©CyberAgent, Inc. AIドリブン推進室` in muted gray
+- **Closing slide**: AID logomark centered on dark or white background
 
 ### Avoid (Common Mistakes)
 
@@ -275,11 +321,14 @@ pdftoppm -jpeg -r 150 -f N -l N output.pdf slide-fixed
 
 | File | Content |
 |------|---------|
+| `reference/ca-slide-template.md` | CyberAgent slide specs: slide types, layout patterns, colors, typography |
+| `reference/aid-slide-template.md` | AID slide specs: dark themes, gradient accents, blue-red palette |
 | `reference/cyberagent_guideline_slide_template.pptx` | Official CA slide template — use as base for template-based editing |
 | `reference/cyberagent_guideline_slide_template.pdf` | PDF version for visual reference |
-| `reference/ca-slide-template.md` | Extracted specs: slide types, layout patterns, colors, typography |
+| `reference/logos/cyberagent/` | CyberAgent logos (standard + white variants) |
+| `reference/logos/aid/` | AID logos (logomark "AI := Driven" + symbol mark `:=`, RGB + CMYK) |
 
-When creating from scratch, follow the CA slide template patterns documented in `reference/ca-slide-template.md`. When editing from a template, prefer using `cyberagent_guideline_slide_template.pptx` as the base.
+When creating from scratch, read the appropriate template spec (`ca-slide-template.md` or `aid-slide-template.md`) based on the selected template mode. When editing from a template, prefer using `cyberagent_guideline_slide_template.pptx` as the base.
 
 ---
 
