@@ -1,0 +1,27 @@
+skills/pptx/SKILL.md
+  7f443f14d48478a9 64-93,127,129,131,133-134,136,138-146,148,150,152,154,156-172,178,227,274-285
+skills/pptx/reference/ca-slide-template.md
+  7f443f14d48478a9 1-162
+skills/pptx/pptxgenjs.md
+  7f443f14d48478a9 14,32,34-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "e1bd7971a2db6d6b9fc7734dad25841360653b22",
+  "prompts": {
+    "7f443f14d48478a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f84c10b8-a647-465a-8aba-40c1c4360cf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 251,
+      "total_deletions": 37,
+      "accepted_lines": 250,
+      "overriden_lines": 0
+    }
+  }
+}
