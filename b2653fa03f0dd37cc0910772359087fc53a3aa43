@@ -1,0 +1,37 @@
+skills/uhd-image-upscaler/scripts/upscale.ts
+  8fa1d61937e7a841 306-307
+skills/uhd-image-sdr-to-hdr/scripts/sdr-to-hdr.ts
+  8fa1d61937e7a841 10,18,26-27,31,34,36,60-61,84,87-88,94,113,119,122,124,165-170,228,238,244-249,252-253,260,263,265,267-270,272-273,282,302,313-323,329,332,334,336-339,342-343,363,374-375,379-381,408-416,434,436,440-441,454-455,495,520,525,534,536,541-544,567-584,586-601,616,632,635-636,650-668,686
+skills/uhd-image-sdr-to-hdr/scripts/hdr-encode.ts
+  8fa1d61937e7a841 1-645
+skills/uhd-image-sdr-to-hdr/scripts/types.ts
+  8fa1d61937e7a841 3,7,9,24-25,71-72,75-76
+skills/uhd-format-converter/scripts/convert.ts
+  8fa1d61937e7a841 103
+skills/uhd-gain-map-editor/scripts/gainmap.ts
+  8fa1d61937e7a841 107,772-774
+skills/uhd-image-sdr-to-hdr/scripts/package.json
+  8fa1d61937e7a841 10
+skills/uhd-image-optimization/scripts/optimize.ts
+  8fa1d61937e7a841 15-16,136,201-202,205-209,286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "b2653fa03f0dd37cc0910772359087fc53a3aa43",
+  "prompts": {
+    "8fa1d61937e7a841": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d579015a-c132-4963-9e40-df35dfe06f39",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 954,
+      "total_deletions": 218,
+      "accepted_lines": 834,
+      "overriden_lines": 0
+    }
+  }
+}
