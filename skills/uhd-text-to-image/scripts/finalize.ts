@@ -1,6 +1,21 @@
 import { copyFileSync, existsSync, mkdirSync } from "fs";
-import { join, basename } from "path";
-import { readSessionMeta, readSelections, writeSessionMeta, getImagesDir } from "./session.ts";
+import { basename, extname, join } from "path";
+import { getImagesDir, readSelections, readSessionMeta, writeSessionMeta } from "./session.ts";
+
+function resolveUniqueDestinationPath(destDir: string, filename: string): string {
+  const base = basename(filename);
+  const ext = extname(base);
+  const stem = ext ? base.slice(0, -ext.length) : base;
+
+  let candidate = join(destDir, base);
+  let counter = 1;
+  while (existsSync(candidate)) {
+    candidate = join(destDir, `${stem}-${counter}${ext}`);
+    counter++;
+  }
+
+  return candidate;
+}
 
 /**
  * Copy selected ("keep") images from a session to a destination directory.
@@ -13,18 +28,16 @@ export function finalizeSession(sessionId: string, dest: string): string[] {
 
   mkdirSync(dest, { recursive: true });
 
-  // Determine which files to copy
   let filesToCopy: string[];
-
   if (selections) {
-    // Copy only files marked as "keep"
     filesToCopy = selections.selections
       .filter((s) => s.status === "keep")
-      .map((s) => s.filename);
+      .map((s) => basename(s.filename));
   } else {
-    // No selections — copy all images
-    filesToCopy = meta.jobs.flatMap((j) => j.images.map((img) => img.filename));
+    filesToCopy = meta.jobs.flatMap((j) => j.images.map((img) => basename(img.filename)));
   }
+
+  filesToCopy = Array.from(new Set(filesToCopy));
 
   const copied: string[] = [];
   for (const filename of filesToCopy) {
@@ -33,12 +46,12 @@ export function finalizeSession(sessionId: string, dest: string): string[] {
       console.error(`Warning: image not found, skipping: ${filename}`);
       continue;
     }
-    const destPath = join(dest, basename(filename));
+
+    const destPath = resolveUniqueDestinationPath(dest, filename);
     copyFileSync(src, destPath);
     copied.push(destPath);
   }
 
-  // Update session status
   meta.status = "finalized";
   writeSessionMeta(sessionId, meta);
 

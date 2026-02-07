@@ -23,7 +23,7 @@ export function printPlan(
     const job = jobs[i];
     const model = MODELS[job.model];
     const baseName = job.name || slugifyPrompt(job.prompt);
-    const filenames = generateFilenames(baseName, job.numImages, job.outputFormat, outDir);
+    const filenames = generateFilenames(baseName, job.numImages, job.outputFormat, outDir, { reserve: false });
     const cost = estimateJobCost(job);
 
     console.log(`Job ${i + 1}/${jobs.length}:`);
@@ -62,6 +62,42 @@ export function printPlan(
   console.log(`Total: ${totalImages} image${totalImages !== 1 ? "s" : ""}, ${formatCost(totalCost)}`);
   console.log(`Output: ${outDir}`);
   console.log(LINE);
+}
+
+/** Output generation plan as JSON */
+export function printPlanJson(
+  jobs: JobDefinition[],
+  outDir: string,
+  sessionId?: string,
+): void {
+  const output = {
+    ...(sessionId && { sessionId }),
+    outDir,
+    totalCost: estimateTotalCost(jobs),
+    jobs: jobs.map((job) => {
+      const model = MODELS[job.model];
+      const baseName = job.name || slugifyPrompt(job.prompt);
+      const filenames = generateFilenames(baseName, job.numImages, job.outputFormat, outDir, { reserve: false });
+      return {
+        model: job.model,
+        modelDisplayName: model.displayName,
+        prompt: job.prompt,
+        numImages: job.numImages,
+        outputFormat: job.outputFormat,
+        filenames,
+        cost: estimateJobCost(job),
+        params: {
+          imageSize: job.imageSize,
+          resolution: job.resolution,
+          aspectRatio: job.aspectRatio,
+          enableWebSearch: job.enableWebSearch,
+          seed: job.seed,
+        },
+      };
+    }),
+  };
+
+  console.log(JSON.stringify(output, null, 2));
 }
 
 /** Print results after generation */

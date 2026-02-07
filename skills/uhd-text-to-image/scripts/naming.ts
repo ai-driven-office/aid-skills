@@ -26,6 +26,28 @@ export function slugifyPrompt(prompt: string): string {
   return slug.slice(0, 50).replace(/-$/, "") || "image";
 }
 
+interface FilenameOptions {
+  /** Reserve generated names in-process to avoid collisions across concurrent jobs */
+  reserve?: boolean;
+}
+
+const RESERVED_FILENAMES = new Set<string>();
+
+function sanitizeBaseName(baseName: string): string {
+  const trimmed = baseName.trim();
+  if (!trimmed) return "image";
+
+  const sanitized = trimmed
+    .replace(/[\\/]+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "")
+    .replace(/^\.+/, "");
+
+  return sanitized.slice(0, 80) || "image";
+}
+
 /**
  * Generate filenames for a job, handling multi-image suffixes and collisions.
  */
@@ -34,15 +56,21 @@ export function generateFilenames(
   numImages: number,
   format: string,
   outDir: string,
+  options: FilenameOptions = {},
 ): string[] {
+  const safeBaseName = sanitizeBaseName(baseName);
+  const shouldReserve = options.reserve === true;
   const names: string[] = [];
   for (let i = 0; i < numImages; i++) {
     const suffix = numImages > 1 ? `-${i + 1}` : "";
-    let candidate = `${baseName}${suffix}.${format}`;
+    let candidate = `${safeBaseName}${suffix}.${format}`;
     let counter = 1;
-    while (existsSync(join(outDir, candidate))) {
-      candidate = `${baseName}${suffix}-${counter}.${format}`;
+    while (existsSync(join(outDir, candidate)) || RESERVED_FILENAMES.has(candidate)) {
+      candidate = `${safeBaseName}${suffix}-${counter}.${format}`;
       counter++;
+    }
+    if (shouldReserve) {
+      RESERVED_FILENAMES.add(candidate);
     }
     names.push(candidate);
   }

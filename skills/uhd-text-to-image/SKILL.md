@@ -1,8 +1,6 @@
 ---
 name: uhd-text-to-image
 description: UHD image generation system. Generates images from text prompts using Seedream v4.5 (creative/photos/cute/artistic) or Nano Banana Pro (accurate text rendering/complex prompts/intelligent). Use when you need to generate, create, or produce images from descriptions. Includes session-based workflow with browser review picker, refinement loops, and finalization.
-vm0_secrets:
-  - FAL_KEY
 ---
 
 # UHD Image Generator

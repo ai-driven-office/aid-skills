@@ -60,8 +60,11 @@ export async function executeJob(
       });
 
       const data = result.data as { images: Array<{ url: string; width?: number; height?: number; content_type?: string }> };
+      if (!data || !Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error(`No images returned from ${model.displayName}`);
+      }
       const baseName = job.name || slugifyPrompt(job.prompt);
-      const filenames = generateFilenames(baseName, data.images.length, job.outputFormat, outDir);
+      const filenames = generateFilenames(baseName, data.images.length, job.outputFormat, outDir, { reserve: true });
       const images = await downloadImages(data.images, filenames, outDir);
 
       return {

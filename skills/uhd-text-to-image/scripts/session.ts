@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { SessionMeta, SelectionSet } from "./types.ts";
 import { slugifyPrompt } from "./naming.ts";
@@ -21,6 +21,19 @@ export function generateSessionId(hint: string): string {
   return `${date}-${time}-${slug}`;
 }
 
+function generateUniqueSessionId(hint: string): string {
+  const baseId = generateSessionId(hint);
+  if (!existsSync(getSessionDir(baseId))) {
+    return baseId;
+  }
+
+  let suffix = 2;
+  while (existsSync(getSessionDir(`${baseId}-${suffix}`))) {
+    suffix++;
+  }
+  return `${baseId}-${suffix}`;
+}
+
 /** Get the directory path for a session */
 export function getSessionDir(sessionId: string): string {
   return join(SESSIONS_DIR, sessionId);
@@ -33,7 +46,7 @@ export function getImagesDir(sessionId: string): string {
 
 /** Create a new session directory and return its ID */
 export function createSession(hint: string, command: string): { id: string; dir: string; imagesDir: string } {
-  const id = generateSessionId(hint);
+  const id = generateUniqueSessionId(hint);
   const dir = getSessionDir(id);
   const imagesDir = getImagesDir(id);
   mkdirSync(imagesDir, { recursive: true });
@@ -83,7 +96,14 @@ export function writeSelections(sessionId: string, selections: SelectionSet): vo
 export function listSessions(): string[] {
   if (!existsSync(SESSIONS_DIR)) return [];
   return readdirSync(SESSIONS_DIR)
-    .filter((name) => !name.startsWith("."))
+    .filter((name) => {
+      if (name.startsWith(".")) return false;
+      try {
+        return lstatSync(getSessionDir(name)).isDirectory();
+      } catch {
+        return false;
+      }
+    })
     .sort()
     .reverse();
 }
@@ -113,12 +133,24 @@ export function deleteAllSessions(): void {
 /** Resolve a session ID — use provided, or fall back to latest */
 export function resolveSessionId(sessionId?: string): string {
   if (sessionId) {
-    // Allow partial match
     const sessions = listSessions();
-    const match = sessions.find((s) => s === sessionId || s.startsWith(sessionId));
-    if (!match) throw new Error(`Session not found: ${sessionId}`);
-    return match;
+
+    if (sessions.includes(sessionId)) {
+      return sessionId;
+    }
+
+    const partialMatches = sessions.filter((s) => s.startsWith(sessionId));
+    if (partialMatches.length === 1) {
+      return partialMatches[0];
+    }
+    if (partialMatches.length > 1) {
+      throw new Error(
+        `Ambiguous session prefix '${sessionId}'. Matches: ${partialMatches.slice(0, 5).join(", ")}`,
+      );
+    }
+    throw new Error(`Session not found: ${sessionId}`);
   }
+
   const latest = getLatestSession();
   if (!latest) throw new Error("No sessions found. Run 'generate' first.");
   return latest;

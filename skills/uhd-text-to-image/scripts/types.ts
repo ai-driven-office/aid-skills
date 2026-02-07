@@ -148,7 +148,6 @@ export interface CliArgs {
   outputFormat: "png" | "jpeg" | "webp";
   enableWebSearch: boolean;
   seed?: number;
-  outDir: string;
   yes: boolean;
   json: boolean;
   dryRun: boolean;

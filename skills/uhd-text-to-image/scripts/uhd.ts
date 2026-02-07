@@ -15,23 +15,44 @@
  *   bun uhd.ts help
  */
 
-import type { CliArgs, JobDefinition, ModelId, SessionJob, SessionImage } from "./types.ts";
+import { basename } from "path";
+import { createInterface } from "readline";
+import { estimateJobCost, estimateTotalCost } from "./cost.ts";
+import { finalizeSession } from "./finalize.ts";
+import { parseManifest, resolveManifestJobs } from "./manifest.ts";
 import { autoSelectModel, MODELS } from "./models.ts";
 import { slugifyPrompt } from "./naming.ts";
-import { executeJob, executeBatch, checkStatus } from "./queue.ts";
-import { parseManifest, resolveManifestJobs } from "./manifest.ts";
-import { estimateJobCost, estimateTotalCost, formatCost } from "./cost.ts";
-import { printPlan, printResults, printResultsJson, printStatus, printSessions, printSessionInfo } from "./output.ts";
-import {
-  createSession, readSessionMeta, writeSessionMeta, readSelections,
-  listSessions, resolveSessionId, deleteSession, deleteAllSessions,
-  getImagesDir,
-} from "./session.ts";
+import { printPlan, printPlanJson, printResults, printResultsJson, printSessions, printStatus } from "./output.ts";
+import { checkStatus, executeBatch, executeJob } from "./queue.ts";
 import { startReviewServer } from "./review/server.ts";
-import { finalizeSession } from "./finalize.ts";
-import { createInterface } from "readline";
+import {
+  createSession,
+  deleteAllSessions,
+  deleteSession,
+  generateSessionId,
+  getImagesDir,
+  listSessions,
+  readSelections,
+  readSessionMeta,
+  resolveSessionId,
+  writeSelections,
+  writeSessionMeta,
+} from "./session.ts";
+import type { CliArgs, JobDefinition, ModelId, SessionJob } from "./types.ts";
+
+const VALID_MODELS = new Set(["auto", "seedream", "banana"]);
+const VALID_RESOLUTIONS = new Set(["1K", "2K", "4K"]);
+const VALID_FORMATS = new Set(["png", "jpeg", "webp"]);
 
 // ── Arg Parsing ──────────────────────────────────────────────
+
+function parseOptionValue(argv: string[], i: number, flag: string): string {
+  const value = argv[i + 1];
+  if (value === undefined || value.startsWith("-")) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+  return value;
+}
 
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
@@ -43,7 +64,6 @@ function parseArgs(argv: string[]): CliArgs {
     aspectRatio: "auto",
     outputFormat: "png",
     enableWebSearch: false,
-    outDir: "./generated",
     yes: false,
     json: false,
     dryRun: false,
@@ -57,40 +77,50 @@ function parseArgs(argv: string[]): CliArgs {
     const arg = argv[i];
 
     switch (arg) {
-      case "--model": case "-m":
-        args.model = argv[++i] as ModelId | "auto";
+      case "--model":
+      case "-m":
+        args.model = parseOptionValue(argv, i, arg) as ModelId | "auto";
+        i++;
         break;
-      case "--num": case "-n":
-        args.numImages = parseInt(argv[++i], 10);
+      case "--num":
+      case "-n":
+        args.numImages = parseInt(parseOptionValue(argv, i, arg), 10);
+        i++;
         break;
       case "--size":
-        args.imageSize = argv[++i];
+        args.imageSize = parseOptionValue(argv, i, arg);
+        i++;
         break;
       case "--resolution":
-        args.resolution = argv[++i];
+        args.resolution = parseOptionValue(argv, i, arg);
+        i++;
         break;
       case "--aspect":
-        args.aspectRatio = argv[++i];
+        args.aspectRatio = parseOptionValue(argv, i, arg);
+        i++;
         break;
       case "--format":
-        args.outputFormat = argv[++i] as "png" | "jpeg" | "webp";
+        args.outputFormat = parseOptionValue(argv, i, arg) as CliArgs["outputFormat"];
+        i++;
         break;
       case "--web-search":
         args.enableWebSearch = true;
         break;
       case "--seed":
-        args.seed = parseInt(argv[++i], 10);
+        args.seed = parseInt(parseOptionValue(argv, i, arg), 10);
+        i++;
         break;
-      case "--out": case "-o":
-        args.outDir = argv[++i];
-        break;
-      case "--dest": case "-d":
-        args.dest = argv[++i];
+      case "--dest":
+      case "-d":
+        args.dest = parseOptionValue(argv, i, arg);
+        i++;
         break;
       case "--session":
-        args.sessionId = argv[++i];
+        args.sessionId = parseOptionValue(argv, i, arg);
+        i++;
         break;
-      case "--yes": case "-y":
+      case "--yes":
+      case "-y":
         args.yes = true;
         break;
       case "--json":
@@ -100,25 +130,28 @@ function parseArgs(argv: string[]): CliArgs {
       case "--dry-run":
         args.dryRun = true;
         break;
-      case "--concurrency": case "-c":
-        args.concurrency = parseInt(argv[++i], 10);
+      case "--concurrency":
+      case "-c":
+        args.concurrency = parseInt(parseOptionValue(argv, i, arg), 10);
+        i++;
         break;
       case "--name":
-        args.name = argv[++i];
+        args.name = parseOptionValue(argv, i, arg);
+        i++;
         break;
       case "--all":
         args.cleanAll = true;
         break;
       default:
-        if (!arg.startsWith("-")) {
-          positional.push(arg);
+        if (arg.startsWith("-")) {
+          throw new Error(`Unknown option: ${arg}`);
         }
+        positional.push(arg);
         break;
     }
     i++;
   }
 
-  // Route command
   const cmd = positional[0];
   if (cmd === "generate" || cmd === "gen" || cmd === "g") {
     args.command = "generate";
@@ -153,6 +186,34 @@ function parseArgs(argv: string[]): CliArgs {
   return args;
 }
 
+function assertPositiveInteger(value: number, label: string): void {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+}
+
+function validateArgs(args: CliArgs): void {
+  if (!VALID_MODELS.has(args.model)) {
+    throw new Error(`Invalid --model '${args.model}'. Use auto, seedream, or banana.`);
+  }
+  if (!VALID_FORMATS.has(args.outputFormat)) {
+    throw new Error(`Invalid --format '${args.outputFormat}'. Use png, jpeg, or webp.`);
+  }
+  if (!VALID_RESOLUTIONS.has(args.resolution)) {
+    throw new Error(`Invalid --resolution '${args.resolution}'. Use 1K, 2K, or 4K.`);
+  }
+  assertPositiveInteger(args.numImages, "--num");
+  assertPositiveInteger(args.concurrency, "--concurrency");
+
+  if (args.seed !== undefined && !Number.isInteger(args.seed)) {
+    throw new Error("--seed must be an integer");
+  }
+
+  if (args.command === "clean" && args.cleanAll && args.sessionId) {
+    throw new Error("Use either a session ID or --all, not both.");
+  }
+}
+
 // ── Confirmation Prompt ──────────────────────────────────────
 
 async function confirm(message: string): Promise<boolean> {
@@ -165,6 +226,27 @@ async function confirm(message: string): Promise<boolean> {
   });
 }
 
+function cleanupSessionSafe(sessionId: string): void {
+  try {
+    deleteSession(sessionId);
+  } catch {
+    // Best effort cleanup for cancelled runs.
+  }
+}
+
+function previewSessionTarget(hint: string): { sessionId: string; imagesDir: string } {
+  const sessionId = generateSessionId(hint);
+  return { sessionId, imagesDir: getImagesDir(sessionId) };
+}
+
+function showPlan(args: CliArgs, jobs: JobDefinition[], imagesDir: string, sessionId: string): void {
+  if (args.json) {
+    printPlanJson(jobs, imagesDir, sessionId);
+  } else {
+    printPlan(jobs, imagesDir, sessionId);
+  }
+}
+
 // ── Build Jobs ───────────────────────────────────────────────
 
 function buildSingleJob(args: CliArgs): JobDefinition {
@@ -174,8 +256,7 @@ function buildSingleJob(args: CliArgs): JobDefinition {
 
   const maxImages = MODELS[model].maxImages;
   if (args.numImages > maxImages) {
-    console.error(`Error: ${MODELS[model].displayName} supports max ${maxImages} images per call`);
-    process.exit(1);
+    throw new Error(`${MODELS[model].displayName} supports max ${maxImages} images per call`);
   }
 
   return {
@@ -193,6 +274,11 @@ function buildSingleJob(args: CliArgs): JobDefinition {
 }
 
 function buildCompareJobs(args: CliArgs): JobDefinition[] {
+  const maxCompareImages = Math.min(MODELS.seedream.maxImages, MODELS.banana.maxImages);
+  if (args.numImages > maxCompareImages) {
+    throw new Error(`Compare mode supports max ${maxCompareImages} images per model`);
+  }
+
   return [
     {
       prompt: args.prompt!,
@@ -221,7 +307,7 @@ function buildCompareJobs(args: CliArgs): JobDefinition[] {
   ];
 }
 
-/** Convert a JobResult into SessionJob + SessionImage entries */
+/** Convert a JobResult into SessionJob entries */
 function jobResultToSession(
   job: JobDefinition,
   result: { images: Array<{ url: string; localPath: string; width: number; height: number }>; requestId: string; duration: number },
@@ -242,7 +328,7 @@ function jobResultToSession(
       ...(job.seed !== undefined && { seed: job.seed }),
     },
     images: result.images.map((img) => ({
-      filename: img.localPath.split("/").pop()!,
+      filename: basename(img.localPath),
       width: img.width,
       height: img.height,
       requestId: result.requestId,
@@ -255,23 +341,27 @@ function jobResultToSession(
 
 async function cmdGenerate(args: CliArgs): Promise<void> {
   if (!args.prompt) {
-    console.error("Error: prompt is required\nUsage: bun uhd.ts generate <prompt>");
-    process.exit(1);
+    throw new Error("Prompt is required. Usage: bun uhd.ts generate <prompt>");
   }
 
   const job = buildSingleJob(args);
   const jobs = [job];
+  const preview = previewSessionTarget(args.prompt);
 
-  // Create session
+  if (args.dryRun) {
+    showPlan(args, jobs, preview.imagesDir, preview.sessionId);
+    return;
+  }
+
   const session = createSession(args.prompt, "generate");
-
-  printPlan(jobs, session.imagesDir, session.id);
-
-  if (args.dryRun) return;
+  if (!args.json) {
+    printPlan(jobs, session.imagesDir, session.id);
+  }
 
   if (!args.yes) {
     const ok = await confirm("Proceed?");
     if (!ok) {
+      cleanupSessionSafe(session.id);
       console.log("Cancelled.");
       return;
     }
@@ -281,7 +371,6 @@ async function cmdGenerate(args: CliArgs): Promise<void> {
     if (!args.json) process.stderr.write(`\r  ${status}  `);
   });
 
-  // Update session meta
   const meta = readSessionMeta(session.id);
   meta.jobs.push(jobResultToSession(job, result, 0));
   meta.totalCost = estimateTotalCost(jobs);
@@ -297,23 +386,27 @@ async function cmdGenerate(args: CliArgs): Promise<void> {
 
 async function cmdBatch(args: CliArgs): Promise<void> {
   if (!args.manifestPath) {
-    console.error("Error: manifest path is required\nUsage: bun uhd.ts batch <manifest.json>");
-    process.exit(1);
+    throw new Error("Manifest path is required. Usage: bun uhd.ts batch <manifest.json>");
   }
 
   const manifest = parseManifest(args.manifestPath);
   const jobs = resolveManifestJobs(manifest);
+  const preview = previewSessionTarget(jobs[0].prompt);
 
-  // Create session using first prompt as hint
+  if (args.dryRun) {
+    showPlan(args, jobs, preview.imagesDir, preview.sessionId);
+    return;
+  }
+
   const session = createSession(jobs[0].prompt, "batch");
-
-  printPlan(jobs, session.imagesDir, session.id);
-
-  if (args.dryRun) return;
+  if (!args.json) {
+    printPlan(jobs, session.imagesDir, session.id);
+  }
 
   if (!args.yes) {
     const ok = await confirm("Proceed?");
     if (!ok) {
+      cleanupSessionSafe(session.id);
       console.log("Cancelled.");
       return;
     }
@@ -323,7 +416,6 @@ async function cmdBatch(args: CliArgs): Promise<void> {
     if (!args.json) process.stderr.write(`\r  Job ${idx + 1}/${jobs.length}: ${status}  `);
   });
 
-  // Update session meta
   const meta = readSessionMeta(session.id);
   for (let i = 0; i < results.length; i++) {
     meta.jobs.push(jobResultToSession(jobs[i], results[i], 0));
@@ -341,21 +433,26 @@ async function cmdBatch(args: CliArgs): Promise<void> {
 
 async function cmdCompare(args: CliArgs): Promise<void> {
   if (!args.prompt) {
-    console.error("Error: prompt is required\nUsage: bun uhd.ts compare <prompt>");
-    process.exit(1);
+    throw new Error("Prompt is required. Usage: bun uhd.ts compare <prompt>");
   }
 
   const jobs = buildCompareJobs(args);
+  const preview = previewSessionTarget(args.prompt);
+
+  if (args.dryRun) {
+    showPlan(args, jobs, preview.imagesDir, preview.sessionId);
+    return;
+  }
 
   const session = createSession(args.prompt, "compare");
-
-  printPlan(jobs, session.imagesDir, session.id);
-
-  if (args.dryRun) return;
+  if (!args.json) {
+    printPlan(jobs, session.imagesDir, session.id);
+  }
 
   if (!args.yes) {
     const ok = await confirm("Proceed?");
     if (!ok) {
+      cleanupSessionSafe(session.id);
       console.log("Cancelled.");
       return;
     }
@@ -368,7 +465,6 @@ async function cmdCompare(args: CliArgs): Promise<void> {
     }
   });
 
-  // Update session meta
   const meta = readSessionMeta(session.id);
   for (let i = 0; i < results.length; i++) {
     meta.jobs.push(jobResultToSession(jobs[i], results[i], 0));
@@ -395,25 +491,21 @@ async function cmdRefine(args: CliArgs): Promise<void> {
   const selections = readSelections(sessionId);
 
   if (!selections) {
-    console.error("No selections found. Run 'review' first to select images.");
-    process.exit(1);
+    throw new Error("No selections found. Run 'review' first to select images.");
   }
 
-  // Find entries marked for regeneration
   const regenEntries = selections.selections.filter((s) => s.status === "regenerate");
   if (regenEntries.length === 0) {
     console.log("No images marked for regeneration.");
     return;
   }
 
-  // Build jobs from regen entries
   const currentRound = Math.max(0, ...meta.jobs.map((j) => j.round));
   const nextRound = currentRound + 1;
   const jobs: JobDefinition[] = [];
 
   for (const entry of regenEntries) {
-    // Find the original job for this image to inherit model/params
-    let originalJob = meta.jobs[0]; // fallback
+    let originalJob = meta.jobs[0];
     for (const job of meta.jobs) {
       if (job.images.some((img) => img.filename === entry.filename)) {
         originalJob = job;
@@ -421,10 +513,23 @@ async function cmdRefine(args: CliArgs): Promise<void> {
       }
     }
 
+    if (!originalJob) {
+      throw new Error(`Could not resolve original job for ${entry.filename}`);
+    }
+
+    const prompt = entry.newPrompt && entry.newPrompt.trim().length > 0
+      ? entry.newPrompt.trim()
+      : originalJob.prompt;
+    const numImages = entry.numImages || 1;
+    const maxImages = MODELS[originalJob.model].maxImages;
+    if (numImages > maxImages) {
+      throw new Error(`${MODELS[originalJob.model].displayName} supports max ${maxImages} images per call`);
+    }
+
     jobs.push({
-      prompt: entry.newPrompt || originalJob.prompt,
+      prompt,
       model: originalJob.model as ModelId,
-      numImages: entry.numImages || 1,
+      numImages,
       imageSize: originalJob.params.imageSize as string,
       resolution: originalJob.params.resolution as string,
       aspectRatio: originalJob.params.aspectRatio as string,
@@ -436,11 +541,14 @@ async function cmdRefine(args: CliArgs): Promise<void> {
 
   const imagesDir = getImagesDir(sessionId);
 
-  console.log(`\n=== UHD Refinement (Round ${nextRound}) ===\n`);
-  console.log(`Session: ${sessionId}`);
-  console.log(`Regenerating ${regenEntries.length} job(s)...\n`);
-
-  printPlan(jobs, imagesDir);
+  if (!args.json) {
+    console.log(`\n=== UHD Refinement (Round ${nextRound}) ===\n`);
+    console.log(`Session: ${sessionId}`);
+    console.log(`Regenerating ${regenEntries.length} job(s)...\n`);
+    printPlan(jobs, imagesDir, sessionId);
+  } else if (args.dryRun) {
+    printPlanJson(jobs, imagesDir, sessionId);
+  }
 
   if (args.dryRun) return;
 
@@ -456,7 +564,6 @@ async function cmdRefine(args: CliArgs): Promise<void> {
     if (!args.json) process.stderr.write(`\r  Regen ${idx + 1}/${jobs.length}: ${status}  `);
   });
 
-  // Append new jobs to session meta
   for (let i = 0; i < results.length; i++) {
     meta.jobs.push(jobResultToSession(jobs[i], results[i], nextRound));
   }
@@ -464,20 +571,18 @@ async function cmdRefine(args: CliArgs): Promise<void> {
   meta.status = "refined";
   writeSessionMeta(sessionId, meta);
 
-  // Update selections: keep previous keep/reject, add new images as "keep"
   const newImages = results.flatMap((r) => r.images);
   const updatedSelections = selections.selections.filter((s) => s.status !== "regenerate");
   for (const img of newImages) {
     updatedSelections.push({
-      filename: img.localPath.split("/").pop()!,
+      filename: basename(img.localPath),
       status: "keep",
     });
   }
+
   selections.selections = updatedSelections;
   selections.round = nextRound;
   selections.timestamp = new Date().toISOString();
-
-  const { writeSelections } = await import("./session.ts");
   writeSelections(sessionId, selections);
 
   if (!args.json) {
@@ -544,8 +649,7 @@ async function cmdClean(args: CliArgs): Promise<void> {
 
 async function cmdStatus(args: CliArgs): Promise<void> {
   if (!args.requestId) {
-    console.error("Error: request-id is required\nUsage: bun uhd.ts status <request-id>");
-    process.exit(1);
+    throw new Error("request-id is required. Usage: bun uhd.ts status <request-id>");
   }
 
   try {
@@ -556,8 +660,7 @@ async function cmdStatus(args: CliArgs): Promise<void> {
       const status = await checkStatus(args.requestId, MODELS.banana.endpoint);
       printStatus(status);
     } catch {
-      console.error(`Could not find request: ${args.requestId}`);
-      process.exit(1);
+      throw new Error(`Could not find request: ${args.requestId}`);
     }
   }
 }
@@ -601,7 +704,7 @@ General Options:
   --yes, -y                Skip confirmation prompt
   --json                   JSON output (implies --yes)
   --dry-run                Show plan without executing
-  --concurrency, -c <n>    Max concurrent jobs for batch (default: 4)
+  --concurrency, -c <n>    Max concurrent jobs for batch/refine (default: 4)
 
 Environment:
   FAL_KEY                  Required. Your fal.ai API key.
@@ -616,6 +719,7 @@ Examples:
   bun uhd.ts generate "A white kitten in a teacup" --num 2
   bun uhd.ts generate "Badge with 'AI Summit'" -m banana --web-search
   bun uhd.ts compare "A cozy cafe at sunset" --dry-run
+  bun uhd.ts compare "A cozy cafe at sunset" --dry-run --json
   bun uhd.ts batch manifest.json -c 4
   bun uhd.ts review
   bun uhd.ts finalize --dest ./images
@@ -628,14 +732,11 @@ Examples:
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+  validateArgs(args);
 
-  // Validate FAL_KEY for commands that need it
   const needsKey = ["generate", "batch", "compare", "status", "refine"];
-  if (needsKey.includes(args.command) && !args.dryRun) {
-    if (!process.env.FAL_KEY) {
-      console.error("Error: FAL_KEY environment variable is required.\nSet it with: export FAL_KEY=your-api-key");
-      process.exit(1);
-    }
+  if (needsKey.includes(args.command) && !args.dryRun && !process.env.FAL_KEY) {
+    throw new Error("FAL_KEY environment variable is required. Set it with: export FAL_KEY=your-api-key");
   }
 
   switch (args.command) {
