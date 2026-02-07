@@ -303,6 +303,8 @@ async function cmdBatch(args: CliArgs): Promise<void> {
   console.log(`  Est. cost: ${formatCost(totalCost)}`);
   console.log(`  Output: ${outDir}`);
 
+  if (args.dryRun) return;
+
   if (!args.yes) {
     const ok = await confirm("Proceed?");
     if (!ok) { console.log("Cancelled."); return; }

@@ -14,7 +14,7 @@
  */
 
 import sharp from "sharp";
-import { statSync, readdirSync, mkdirSync, writeFileSync, existsSync } from "fs";
+import { statSync, readdirSync, mkdirSync, writeFileSync, existsSync, readFileSync, copyFileSync } from "fs";
 import { join, basename, extname, resolve, dirname } from "path";
 import { createInterface } from "readline";
 import type {
@@ -32,6 +32,29 @@ import type {
 } from "./types.ts";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".avif", ".webp", ".tiff", ".tif", ".heif", ".heic"]);
+const VALID_TYPES = new Set(["rgb", "luminosity"]);
+const VALID_STANDARDS = new Set(["iso", "android", "both"]);
+const VALID_FORMATS = new Set(["jpeg", "avif"]);
+const VALID_MAP_RESOLUTION = new Set(["full", "half"]);
+
+interface GainMapSidecar extends GainMapMetadata {
+  createdAt: string;
+  sdrSource: string;
+  hdrSource: string;
+  output: string;
+  gainMapPath: string;
+  heatmapPath: string;
+  stats: GainStats;
+  coverage: GainCoverage;
+}
+
+function parseOptionValue(argv: string[], i: number, flag: string): string {
+  const value = argv[i + 1];
+  if (value === undefined || value.startsWith("-")) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+  return value;
+}
 
 // ── Arg Parsing ──────────────────────────────────────────────
 
@@ -65,27 +88,32 @@ function parseArgs(argv: string[]): CliArgs {
   while (i < argv.length) {
     const arg = argv[i];
     switch (arg) {
-      case "--type": args.type = argv[++i] as any; break;
-      case "--headroom": args.headroom = parseFloat(argv[++i]); break;
-      case "--standard": args.standard = argv[++i] as any; break;
-      case "-f": case "--format": args.format = argv[++i] as any; break;
-      case "-q": case "--quality": args.quality = parseInt(argv[++i], 10); break;
-      case "--map-quality": args.mapQuality = parseInt(argv[++i], 10); break;
-      case "--map-resolution": args.mapResolution = argv[++i] as any; break;
-      case "--sdr-brightness": args.sdrBrightness = parseFloat(argv[++i]); break;
-      case "--sdr-contrast": args.sdrContrast = parseFloat(argv[++i]); break;
-      case "--sdr-saturation": args.sdrSaturation = parseFloat(argv[++i]); break;
-      case "--sdr-shadows": args.sdrShadows = parseFloat(argv[++i]); break;
-      case "--sdr-highlights": args.sdrHighlights = parseFloat(argv[++i]); break;
-      case "--sdr-warmth": args.sdrWarmth = parseFloat(argv[++i]); break;
-      case "-o": case "--output": args.output = argv[++i]; break;
+      case "--type": args.type = parseOptionValue(argv, i, arg) as any; i++; break;
+      case "--headroom": args.headroom = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--standard": args.standard = parseOptionValue(argv, i, arg) as any; i++; break;
+      case "-f": case "--format": args.format = parseOptionValue(argv, i, arg) as any; i++; break;
+      case "-q": case "--quality": args.quality = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--map-quality": args.mapQuality = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--map-resolution": args.mapResolution = parseOptionValue(argv, i, arg) as any; i++; break;
+      case "--sdr-brightness": args.sdrBrightness = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--sdr-contrast": args.sdrContrast = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--sdr-saturation": args.sdrSaturation = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--sdr-shadows": args.sdrShadows = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--sdr-highlights": args.sdrHighlights = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "--sdr-warmth": args.sdrWarmth = parseFloat(parseOptionValue(argv, i, arg)); i++; break;
+      case "-o": case "--output": args.output = parseOptionValue(argv, i, arg); i++; break;
       case "-r": case "--recursive": args.recursive = true; break;
-      case "-c": case "--concurrency": args.concurrency = parseInt(argv[++i], 10); break;
-      case "--json": args.json = true; break;
+      case "-c": case "--concurrency": args.concurrency = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--json": args.json = true; args.yes = true; break;
       case "--yes": case "-y": args.yes = true; break;
       case "--dry-run": args.dryRun = true; break;
       case "--stdin": args.stdin = true; break;
-      default: if (!arg.startsWith("-")) positional.push(arg); break;
+      default:
+        if (arg.startsWith("-")) {
+          throw new Error(`Unknown option: ${arg}`);
+        }
+        positional.push(arg);
+        break;
     }
     i++;
   }
@@ -102,12 +130,55 @@ function parseArgs(argv: string[]): CliArgs {
   return args;
 }
 
+function validateArgs(args: CliArgs): void {
+  if (!VALID_TYPES.has(args.type)) throw new Error("--type must be rgb or luminosity");
+  if (!VALID_STANDARDS.has(args.standard)) throw new Error("--standard must be iso, android, or both");
+  if (!VALID_FORMATS.has(args.format)) throw new Error("--format must be jpeg or avif");
+  if (!VALID_MAP_RESOLUTION.has(args.mapResolution)) throw new Error("--map-resolution must be full or half");
+  if (Number.isNaN(args.headroom) || args.headroom < 0 || args.headroom > 8) throw new Error("--headroom must be between 0 and 8");
+  if (!Number.isInteger(args.quality) || args.quality < 1 || args.quality > 100) throw new Error("--quality must be 1-100");
+  if (!Number.isInteger(args.mapQuality) || args.mapQuality < 1 || args.mapQuality > 100) throw new Error("--map-quality must be 1-100");
+  if (!Number.isInteger(args.concurrency) || args.concurrency <= 0) throw new Error("--concurrency must be a positive integer");
+}
+
 // ── Utilities ────────────────────────────────────────────────
 
 function humanSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function collectImages(dir: string, recursive: boolean): string[] {
+  const files: string[] = [];
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory() && recursive) {
+      files.push(...collectImages(full, true));
+    } else if (entry.isFile() && IMAGE_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+function sidecarPathForOutput(outputPath: string): string {
+  return outputPath.replace(extname(outputPath), "-gainmap.json");
+}
+
+function sidecarPathForInput(inputPath: string): string {
+  return inputPath.replace(extname(inputPath), "-gainmap.json");
+}
+
+function readSidecar(inputPath: string): GainMapSidecar | null {
+  const sidecar = sidecarPathForInput(resolve(inputPath));
+  if (!existsSync(sidecar)) return null;
+  try {
+    return JSON.parse(readFileSync(sidecar, "utf-8")) as GainMapSidecar;
+  } catch {
+    return null;
+  }
 }
 
 async function confirm(message: string): Promise<boolean> {
@@ -212,6 +283,104 @@ async function computeGainMap(sdrPath: string, hdrPath: string, type: "rgb" | "l
   };
 }
 
+async function createGainMapAssets(args: CliArgs, sdrPath: string, hdrPath: string, outputPath: string): Promise<{
+  gainMapPath: string;
+  heatmapPath: string;
+  sidecarPath: string;
+  width: number;
+  height: number;
+  stats: GainStats;
+  coverage: GainCoverage;
+  outputSize: number;
+  mapSize: number;
+}> {
+  const { gainData, width, height, stats, coverage } = await computeGainMap(
+    sdrPath,
+    hdrPath,
+    args.type,
+    args.mapResolution,
+  );
+
+  const channels = args.type === "rgb" ? 3 : 1;
+  const gainMapPath = outputPath.replace(extname(outputPath), "-gainmap.png");
+  const heatmapPath = outputPath.replace(extname(outputPath), "-heatmap.png");
+  const sidecarPath = sidecarPathForOutput(outputPath);
+  mkdirSync(dirname(outputPath), { recursive: true });
+
+  await sharp(gainData, { raw: { width, height, channels } })
+    .png({ compressionLevel: 6 })
+    .toFile(gainMapPath);
+
+  const heatmapData = Buffer.alloc(width * height * 3);
+  for (let i = 0; i < width * height; i++) {
+    const val = args.type === "rgb" ? gainData[i * 3] : gainData[i];
+    const normalized = val / 255;
+    if (normalized < 0.33) {
+      heatmapData[i * 3] = 0;
+      heatmapData[i * 3 + 1] = Math.round(normalized * 3 * 255);
+      heatmapData[i * 3 + 2] = Math.round((1 - normalized * 3) * 255);
+    } else if (normalized < 0.66) {
+      heatmapData[i * 3] = Math.round((normalized - 0.33) * 3 * 255);
+      heatmapData[i * 3 + 1] = 255;
+      heatmapData[i * 3 + 2] = 0;
+    } else {
+      heatmapData[i * 3] = 255;
+      heatmapData[i * 3 + 1] = Math.round((1 - (normalized - 0.66) * 3) * 255);
+      heatmapData[i * 3 + 2] = 0;
+    }
+  }
+  await sharp(heatmapData, { raw: { width, height, channels: 3 } })
+    .png()
+    .toFile(heatmapPath);
+
+  let pipeline = sharp(sdrPath);
+  if (args.format === "avif") {
+    pipeline = pipeline.avif({ quality: args.quality, effort: 6 });
+  } else {
+    pipeline = pipeline.jpeg({ quality: args.quality, mozjpeg: true });
+  }
+  await pipeline.toFile(outputPath);
+
+  const outputStat = statSync(outputPath);
+  const mapStat = statSync(gainMapPath);
+
+  const sidecar: GainMapSidecar = {
+    createdAt: new Date().toISOString(),
+    sdrSource: sdrPath,
+    hdrSource: hdrPath,
+    output: outputPath,
+    gainMapPath,
+    heatmapPath,
+    type: args.type,
+    standard: args.standard,
+    headroom: args.headroom,
+    minHeadroom: 0,
+    mapWidth: width,
+    mapHeight: height,
+    mapBitDepth: 8,
+    sdrWidth: width,
+    sdrHeight: height,
+    sdrColorSpace: "sRGB",
+    hdrColorSpace: "Display-P3",
+    gamma: 1,
+    stats,
+    coverage,
+  };
+  writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2) + "\n");
+
+  return {
+    gainMapPath,
+    heatmapPath,
+    sidecarPath,
+    width,
+    height,
+    stats,
+    coverage,
+    outputSize: outputStat.size,
+    mapSize: mapStat.size,
+  };
+}
+
 // ── Commands ─────────────────────────────────────────────────
 
 async function cmdCreate(args: CliArgs): Promise<void> {
@@ -231,75 +400,32 @@ async function cmdCreate(args: CliArgs): Promise<void> {
   }
 
   console.log(`\nCreating gain map...`);
-
-  const { gainData, width, height, stats, coverage } = await computeGainMap(
-    resolve(args.input), resolve(args.input2), args.type, args.mapResolution,
-  );
-
-  // Save gain map as PNG
-  const channels = args.type === "rgb" ? 3 : 1;
-  const gainMapPath = args.output.replace(extname(args.output), "-gainmap.png");
-  mkdirSync(dirname(args.output), { recursive: true });
-
-  await sharp(gainData, { raw: { width, height, channels } })
-    .png({ compressionLevel: 6 })
-    .toFile(gainMapPath);
-
-  // Save heatmap visualization
-  const heatmapPath = args.output.replace(extname(args.output), "-heatmap.png");
-  const heatmapData = Buffer.alloc(width * height * 3);
-  for (let i = 0; i < width * height; i++) {
-    const val = args.type === "rgb" ? gainData[i * 3] : gainData[i];
-    const normalized = val / 255;
-    // Blue → Green → Yellow → Red heatmap
-    if (normalized < 0.33) {
-      heatmapData[i * 3] = 0;
-      heatmapData[i * 3 + 1] = Math.round(normalized * 3 * 255);
-      heatmapData[i * 3 + 2] = Math.round((1 - normalized * 3) * 255);
-    } else if (normalized < 0.66) {
-      heatmapData[i * 3] = Math.round((normalized - 0.33) * 3 * 255);
-      heatmapData[i * 3 + 1] = 255;
-      heatmapData[i * 3 + 2] = 0;
-    } else {
-      heatmapData[i * 3] = 255;
-      heatmapData[i * 3 + 1] = Math.round((1 - (normalized - 0.66) * 3) * 255);
-      heatmapData[i * 3 + 2] = 0;
-    }
-  }
-
-  await sharp(heatmapData, { raw: { width, height, channels: 3 } })
-    .png()
-    .toFile(heatmapPath);
-
-  // Create output image (SDR base + gain map metadata reference)
-  await sharp(resolve(args.input))
-    .jpeg({ quality: args.quality, mozjpeg: true })
-    .toFile(resolve(args.output));
-
+  const out = resolve(args.output);
+  const created = await createGainMapAssets(args, resolve(args.input), resolve(args.input2), out);
   const duration = performance.now() - start;
-  const outputStat = statSync(args.output);
-  const mapStat = statSync(gainMapPath);
 
   if (args.json) {
     console.log(JSON.stringify({
       sdrInput: args.input, hdrInput: args.input2, output: args.output,
       type: args.type, headroom: args.headroom, standard: args.standard,
-      outputSize: outputStat.size, mapSize: mapStat.size, duration,
-      stats, coverage,
+      outputSize: created.outputSize, mapSize: created.mapSize, duration,
+      stats: created.stats, coverage: created.coverage,
+      sidecar: created.sidecarPath,
     }, null, 2));
   } else {
     console.log(`\nGain Map Created`);
     console.log("\u2500".repeat(40));
-    console.log(`  SDR base: ${args.output} (${humanSize(outputStat.size)})`);
-    console.log(`  Gain map: ${gainMapPath} (${humanSize(mapStat.size)})`);
-    console.log(`  Heatmap:  ${heatmapPath}`);
+    console.log(`  SDR base: ${args.output} (${humanSize(created.outputSize)})`);
+    console.log(`  Gain map: ${created.gainMapPath} (${humanSize(created.mapSize)})`);
+    console.log(`  Heatmap:  ${created.heatmapPath}`);
+    console.log(`  Metadata: ${created.sidecarPath}`);
     console.log(`  Type: ${args.type}, Headroom: ${args.headroom} stops`);
-    console.log(`  Map: ${width}x${height} (${args.mapResolution})`);
+    console.log(`  Map: ${created.width}x${created.height} (${args.mapResolution})`);
     console.log(`\n  Gain Statistics:`);
-    console.log(`    Min: ${stats.min}, Max: ${stats.max}, Mean: ${stats.mean}`);
-    console.log(`    Highlights (>2x): ${coverage.highlightPercent}%`);
-    console.log(`    Shadows (<1x):    ${coverage.shadowPercent}%`);
-    console.log(`    Neutral (~1x):    ${coverage.neutralPercent}%`);
+    console.log(`    Min: ${created.stats.min}, Max: ${created.stats.max}, Mean: ${created.stats.mean}`);
+    console.log(`    Highlights (>2x): ${created.coverage.highlightPercent}%`);
+    console.log(`    Shadows (<1x):    ${created.coverage.shadowPercent}%`);
+    console.log(`    Neutral (~1x):    ${created.coverage.neutralPercent}%`);
     console.log(`\n  Time: ${(duration / 1000).toFixed(2)}s`);
   }
 }
@@ -315,39 +441,62 @@ async function cmdExtract(args: CliArgs): Promise<void> {
   const sdrPath = join(outDir, "sdr-base.jpg");
   await sharp(resolve(input)).jpeg({ quality: 95 }).toFile(sdrPath);
 
-  // Generate a synthetic gain map visualization from the image data
+  const sidecar = readSidecar(input);
   const meta = await sharp(resolve(input)).metadata();
   const width = meta.width || 0;
   const height = meta.height || 0;
-
-  // Create luminance-based gain map visualization
-  const { data } = await sharp(resolve(input))
-    .resize(Math.min(width, 2048), undefined, { withoutEnlargement: true })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  if (width === 0 || height === 0) {
+    throw new Error("Could not read image dimensions");
+  }
 
   const gainMapPath = join(outDir, "gain-map.png");
-  await sharp(data, { raw: { width: Math.min(width, 2048), height: Math.round(height * Math.min(width, 2048) / width), channels: 1 } })
-    .png()
-    .toFile(gainMapPath);
+  const mapWidth = Math.min(width, 2048);
+  const mapHeight = Math.round(height * mapWidth / width);
+  if (sidecar?.gainMapPath && existsSync(sidecar.gainMapPath)) {
+    copyFileSync(sidecar.gainMapPath, gainMapPath);
+  } else {
+    const { data } = await sharp(resolve(input))
+      .resize(mapWidth, undefined, { withoutEnlargement: true })
+      .grayscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
 
-  const metadata: GainMapMetadata = {
-    type: "luminosity",
-    standard: "unknown",
-    headroom: 0,
-    minHeadroom: 0,
-    mapWidth: Math.min(width, 2048),
-    mapHeight: Math.round(height * Math.min(width, 2048) / width),
-    mapBitDepth: 8,
-    sdrWidth: width,
-    sdrHeight: height,
-    sdrColorSpace: meta.space || "sRGB",
-    hdrColorSpace: "unknown",
-    gamma: 1.0,
-  };
+    await sharp(data, { raw: { width: mapWidth, height: mapHeight, channels: 1 } })
+      .png()
+      .toFile(gainMapPath);
+  }
 
-  writeFileSync(join(outDir, "metadata.json"), JSON.stringify(metadata, null, 2));
+  const metadata: GainMapMetadata = sidecar
+    ? {
+      type: sidecar.type,
+      standard: sidecar.standard,
+      headroom: sidecar.headroom,
+      minHeadroom: sidecar.minHeadroom,
+      mapWidth: sidecar.mapWidth,
+      mapHeight: sidecar.mapHeight,
+      mapBitDepth: sidecar.mapBitDepth,
+      sdrWidth: sidecar.sdrWidth,
+      sdrHeight: sidecar.sdrHeight,
+      sdrColorSpace: sidecar.sdrColorSpace,
+      hdrColorSpace: sidecar.hdrColorSpace,
+      gamma: sidecar.gamma,
+    }
+    : {
+      type: "luminosity",
+      standard: "unknown",
+      headroom: 0,
+      minHeadroom: 0,
+      mapWidth,
+      mapHeight,
+      mapBitDepth: 8,
+      sdrWidth: width,
+      sdrHeight: height,
+      sdrColorSpace: meta.space || "sRGB",
+      hdrColorSpace: "unknown",
+      gamma: 1.0,
+    };
+
+  writeFileSync(join(outDir, "metadata.json"), JSON.stringify(metadata, null, 2) + "\n");
 
   if (args.json) {
     console.log(JSON.stringify({ input, outputDir: outDir, sdrBase: sdrPath, gainMap: gainMapPath, metadata }, null, 2));
@@ -425,34 +574,50 @@ async function cmdInspect(args: CliArgs): Promise<void> {
   if (!input) throw new Error("Input required. Usage: bun gainmap.ts inspect <input>");
 
   const meta = await sharp(resolve(input)).metadata();
-  const stat = statSync(resolve(input));
+  const sidecar = readSidecar(input);
 
   const result: InspectResult = {
     file: basename(input),
-    type: "luminosity",
-    standard: "unknown",
-    headroom: 0,
-    minHeadroom: 0,
-    mapWidth: meta.width || 0,
-    mapHeight: meta.height || 0,
-    mapBitDepth: 8,
-    sdrBase: { width: meta.width || 0, height: meta.height || 0, colorSpace: meta.space || "sRGB", quality: 0 },
-    hdrColorSpace: "unknown",
-    gamma: 1.0,
+    type: sidecar?.type || "luminosity",
+    standard: sidecar?.standard || "unknown",
+    headroom: sidecar?.headroom || 0,
+    minHeadroom: sidecar?.minHeadroom || 0,
+    mapWidth: sidecar?.mapWidth || meta.width || 0,
+    mapHeight: sidecar?.mapHeight || meta.height || 0,
+    mapBitDepth: sidecar?.mapBitDepth || 8,
+    sdrBase: {
+      width: sidecar?.sdrWidth || meta.width || 0,
+      height: sidecar?.sdrHeight || meta.height || 0,
+      colorSpace: sidecar?.sdrColorSpace || meta.space || "sRGB",
+      quality: 0,
+    },
+    hdrColorSpace: sidecar?.hdrColorSpace || "unknown",
+    gamma: sidecar?.gamma || 1.0,
     gainStats: { min: 0, max: 0, mean: 0, stdDev: 0 },
     coverage: { highlightPercent: 0, shadowPercent: 0, neutralPercent: 0 },
   };
 
-  // Try to compute gain stats from the image itself
-  const { data } = await sharp(resolve(input)).resize(512, 512, { fit: "inside" }).grayscale().raw().toBuffer({ resolveWithObject: true });
-  let min = 255, max = 0, sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] < min) min = data[i];
-    if (data[i] > max) max = data[i];
-    sum += data[i];
+  if (sidecar) {
+    result.gainStats = sidecar.stats;
+    result.coverage = sidecar.coverage;
+  } else {
+    const { data } = await sharp(resolve(input)).resize(512, 512, { fit: "inside" }).grayscale().raw().toBuffer({ resolveWithObject: true });
+    let min = 255;
+    let max = 0;
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] < min) min = data[i];
+      if (data[i] > max) max = data[i];
+      sum += data[i];
+    }
+    const mean = sum / data.length;
+    result.gainStats = {
+      min: parseFloat((min / 255 * 8).toFixed(3)),
+      max: parseFloat((max / 255 * 8).toFixed(3)),
+      mean: parseFloat((mean / 255 * 8).toFixed(3)),
+      stdDev: 0,
+    };
   }
-  const mean = sum / data.length;
-  result.gainStats = { min: parseFloat((min / 255 * 8).toFixed(3)), max: parseFloat((max / 255 * 8).toFixed(3)), mean: parseFloat((mean / 255 * 8).toFixed(3)), stdDev: 0 };
 
   if (args.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -468,6 +633,7 @@ async function cmdInspect(args: CliArgs): Promise<void> {
     console.log(`  HDR color space: ${result.hdrColorSpace}`);
     console.log(`\n  Gain Statistics:`);
     console.log(`    Min: ${result.gainStats.min}, Max: ${result.gainStats.max}, Mean: ${result.gainStats.mean}`);
+    console.log(`  Coverage: highlights ${result.coverage.highlightPercent}%, shadows ${result.coverage.shadowPercent}%, neutral ${result.coverage.neutralPercent}%`);
   }
 }
 
@@ -476,7 +642,7 @@ async function cmdValidate(args: CliArgs): Promise<void> {
   if (!input) throw new Error("Input required. Usage: bun gainmap.ts validate <input>");
 
   const meta = await sharp(resolve(input)).metadata();
-  const stat = statSync(resolve(input));
+  const sidecar = readSidecar(input);
   const format = meta.format || "unknown";
   const checks: ValidateCheck[] = [];
   const warnings: string[] = [];
@@ -498,6 +664,15 @@ async function cmdValidate(args: CliArgs): Promise<void> {
     passed: (meta.width || 0) > 0 && (meta.height || 0) > 0,
     message: `${meta.width}x${meta.height}`,
   });
+
+  checks.push({
+    name: "Gain map sidecar",
+    passed: !!sidecar,
+    message: sidecar ? "Found sidecar metadata (-gainmap.json)" : "No sidecar metadata found",
+  });
+  if (!sidecar) {
+    warnings.push("No sidecar metadata found. Run `create` to generate full metadata.");
+  }
 
   // Color space check
   const hasColorSpace = meta.space !== undefined;
@@ -539,6 +714,9 @@ async function cmdValidate(args: CliArgs): Promise<void> {
   if (format === "avif" && meta.depth === "uchar") {
     recommendations.push("Consider 10-bit encoding for better HDR quality");
   }
+  if (sidecar && sidecar.headroom < 1.0) {
+    recommendations.push("Headroom is low (<1.0 stop). Consider 2.0-3.0 for visible HDR gain.");
+  }
 
   const passed = checks.every((c) => c.passed);
 
@@ -556,6 +734,83 @@ async function cmdValidate(args: CliArgs): Promise<void> {
     for (const w of warnings) console.log(`\u26A0\uFE0F  ${w}`);
     for (const r of recommendations) console.log(`\u2139\uFE0F  ${r}`);
     console.log(`\nResult: ${passed ? "PASS" : "FAIL"} (${warnings.length} warnings, ${recommendations.length} recommendations)`);
+  }
+}
+
+async function cmdBatchCreate(args: CliArgs): Promise<void> {
+  const sdrDir = args.input;
+  const hdrDir = args.input2;
+  if (!sdrDir || !hdrDir) {
+    throw new Error("Both SDR and HDR directories are required. Usage: bun gainmap.ts batch-create <sdr-dir> <hdr-dir> -o <dir>");
+  }
+
+  const outDir = args.output || join(sdrDir, "gainmap-output");
+  const sdrFiles = collectImages(sdrDir, args.recursive);
+  const hdrFiles = collectImages(hdrDir, args.recursive);
+  if (sdrFiles.length === 0) throw new Error(`No SDR images found in ${sdrDir}`);
+  if (hdrFiles.length === 0) throw new Error(`No HDR images found in ${hdrDir}`);
+
+  const hdrByFilename = new Map(hdrFiles.map((f) => [basename(f), f]));
+  const hdrByStem = new Map(hdrFiles.map((f) => [basename(f, extname(f)), f]));
+  const pairs = sdrFiles
+    .map((sdrPath) => {
+      const byName = hdrByFilename.get(basename(sdrPath));
+      if (byName) return { sdrPath, hdrPath: byName };
+      const byStem = hdrByStem.get(basename(sdrPath, extname(sdrPath)));
+      return byStem ? { sdrPath, hdrPath: byStem } : null;
+    })
+    .filter((p): p is { sdrPath: string; hdrPath: string } => p !== null);
+
+  if (pairs.length === 0) {
+    throw new Error("No SDR/HDR file pairs matched by filename or stem");
+  }
+
+  console.log(`\nBatch Create Gain Maps: ${pairs.length} pair(s)`);
+  console.log(`  SDR: ${sdrDir}`);
+  console.log(`  HDR: ${hdrDir}`);
+  console.log(`  Output: ${outDir}`);
+
+  if (args.dryRun) return;
+
+  if (!args.yes) {
+    const ok = await confirm("Proceed?");
+    if (!ok) {
+      console.log("Cancelled.");
+      return;
+    }
+  }
+
+  mkdirSync(outDir, { recursive: true });
+  const results: Array<{ output: string; gainMap: string; sidecar: string }> = [];
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < pairs.length) {
+      const idx = nextIndex++;
+      const pair = pairs[idx];
+      const base = basename(pair.sdrPath, extname(pair.sdrPath));
+      const outputExt = args.format === "avif" ? ".avif" : ".jpg";
+      const output = resolve(join(outDir, `${base}${outputExt}`));
+      process.stderr.write(`\r  Creating ${idx + 1}/${pairs.length}: ${base}  `);
+
+      try {
+        const created = await createGainMapAssets(args, resolve(pair.sdrPath), resolve(pair.hdrPath), output);
+        results.push({ output, gainMap: created.gainMapPath, sidecar: created.sidecarPath });
+      } catch (err) {
+        console.error(`\n  Error: ${base}: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(args.concurrency, pairs.length) }, () => worker());
+  await Promise.all(workers);
+  process.stderr.write("\r" + " ".repeat(70) + "\r");
+
+  if (args.json) {
+    console.log(JSON.stringify({ totalPairs: pairs.length, created: results.length, results }, null, 2));
+  } else {
+    console.log(`\nDone: ${results.length}/${pairs.length} gain map images created`);
+    console.log(`  Output: ${outDir}`);
   }
 }
 
@@ -618,6 +873,8 @@ Edit Options:
 
 General Options:
   -o, --output <path>    Output path/directory
+  -r, --recursive        Recurse subdirectories (batch-create)
+  -c, --concurrency <n>  Batch concurrency (default: 4)
   --json                 JSON output
   --yes, -y              Skip confirmation
   --dry-run              Preview without processing
@@ -629,9 +886,11 @@ General Options:
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+  validateArgs(args);
 
   switch (args.command) {
     case "create": await cmdCreate(args); break;
+    case "batch-create": await cmdBatchCreate(args); break;
     case "extract": await cmdExtract(args); break;
     case "edit": await cmdEdit(args); break;
     case "preview": await cmdPreview(args); break;

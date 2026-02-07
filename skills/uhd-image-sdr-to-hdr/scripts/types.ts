@@ -1,11 +1,12 @@
 // Types for UHD SDR-to-HDR Converter
 
-export type Command = "convert" | "batch" | "preview" | "analyze" | "help";
+export type Command = "convert" | "batch" | "preview" | "analyze" | "capabilities" | "help";
 
 export type ConvertMethod = "gainmap" | "ai" | "auto";
 export type GainMapType = "rgb" | "luminosity";
-export type OutputFormat = "avif" | "jpeg";
+export type OutputFormat = "avif" | "jxl" | "jpeg" | "ultrahdr-jpeg";
 export type ColorSpace = "display-p3" | "rec2020";
+export type HdrTransfer = "pq" | "hlg" | "sdr";
 
 export interface CliArgs {
   command: Command;
@@ -18,8 +19,10 @@ export interface CliArgs {
   highlightBoost: number;
   shadowLift: number;
   format: OutputFormat;
-  bitDepth: 10 | 12;
+  bitDepth: 8 | 10 | 12;
   colorSpace: ColorSpace;
+  transfer: HdrTransfer;
+  peakNits: number;
   strength: number;
   aiModel: string;
   recursive: boolean;
@@ -65,8 +68,12 @@ export interface ConvertResult {
   headroom: number;
   colorSpace: ColorSpace;
   bitDepth: number;
+  transfer: HdrTransfer;
+  encoder: string;
   duration: number;
   cost?: number;
+  cicp?: { primaries: number; transfer: number; matrix: number };
+  warning?: string;
 }
 
 export interface AnalyzeResult {

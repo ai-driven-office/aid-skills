@@ -1,0 +1,88 @@
+{
+  "source": "sample.jpg",
+  "variants": [
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-320w.avif",
+      "format": "avif",
+      "width": 320,
+      "height": 240,
+      "size": 1865,
+      "sizeHuman": "1.8 KB",
+      "breakpoint": 320
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-640w.avif",
+      "format": "avif",
+      "width": 640,
+      "height": 480,
+      "size": 3448,
+      "sizeHuman": "3.4 KB",
+      "breakpoint": 640
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample.avif",
+      "format": "avif",
+      "width": 800,
+      "height": 600,
+      "size": 4090,
+      "sizeHuman": "4.0 KB"
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-320w.webp",
+      "format": "webp",
+      "width": 320,
+      "height": 240,
+      "size": 1738,
+      "sizeHuman": "1.7 KB",
+      "breakpoint": 320
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-640w.webp",
+      "format": "webp",
+      "width": 640,
+      "height": 480,
+      "size": 3586,
+      "sizeHuman": "3.5 KB",
+      "breakpoint": 640
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample.webp",
+      "format": "webp",
+      "width": 800,
+      "height": 600,
+      "size": 5292,
+      "sizeHuman": "5.2 KB"
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-320w.jpg",
+      "format": "jpeg",
+      "width": 320,
+      "height": 240,
+      "size": 3271,
+      "sizeHuman": "3.2 KB",
+      "breakpoint": 320
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample-640w.jpg",
+      "format": "jpeg",
+      "width": 640,
+      "height": 480,
+      "size": 6171,
+      "sizeHuman": "6.0 KB",
+      "breakpoint": 640
+    },
+    {
+      "path": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/web-out/sample.jpg",
+      "format": "jpeg",
+      "width": 800,
+      "height": 600,
+      "size": 8893,
+      "sizeHuman": "8.7 KB"
+    }
+  ],
+  "lqip": {
+    "type": "css",
+    "value": "background:rgb(8,40,72)",
+    "size": 23
+  }
+}

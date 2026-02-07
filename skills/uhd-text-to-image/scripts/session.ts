@@ -6,6 +6,7 @@ import { slugifyPrompt } from "./naming.ts";
 const UHD_DIR = ".uhd";
 const SESSIONS_DIR = join(UHD_DIR, "sessions");
 const CACHE_DIR = join(UHD_DIR, "cache");
+const GITIGNORE_CONTENT = "sessions/\ncache/\n";
 
 /** Get the sessions root directory */
 export function getSessionsDir(): string {
@@ -40,17 +41,31 @@ export function getSessionDir(sessionId: string): string {
   return join(SESSIONS_DIR, sessionId);
 }
 
-/** Get the images directory for a session (in cache, gitignored) */
+/** Get the images directory for a session */
 export function getImagesDir(sessionId: string): string {
-  return join(CACHE_DIR, sessionId);
+  const sessionImages = join(getSessionDir(sessionId), "images");
+  const legacyCache = join(CACHE_DIR, sessionId);
+  if (existsSync(legacyCache) && !existsSync(sessionImages)) {
+    return legacyCache;
+  }
+  return sessionImages;
 }
 
-/** Ensure .uhd/.gitignore exists to ignore the cache directory */
+/** Ensure .uhd/.gitignore exists with session/cache ignores */
 function ensureUhdGitignore(): void {
+  mkdirSync(UHD_DIR, { recursive: true });
   const gitignorePath = join(UHD_DIR, ".gitignore");
   if (!existsSync(gitignorePath)) {
-    mkdirSync(UHD_DIR, { recursive: true });
-    writeFileSync(gitignorePath, "cache/\n");
+    writeFileSync(gitignorePath, GITIGNORE_CONTENT);
+    return;
+  }
+
+  const current = readFileSync(gitignorePath, "utf-8");
+  if (!current.includes("sessions/") || !current.includes("cache/")) {
+    const lines = new Set(current.split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
+    lines.add("sessions/");
+    lines.add("cache/");
+    writeFileSync(gitignorePath, `${Array.from(lines).join("\n")}\n`);
   }
 }
 
@@ -60,6 +75,7 @@ export function createSession(hint: string, command: string): { id: string; dir:
   const id = generateUniqueSessionId(hint);
   const dir = getSessionDir(id);
   const imagesDir = getImagesDir(id);
+  mkdirSync(dir, { recursive: true });
   mkdirSync(imagesDir, { recursive: true });
 
   const meta: SessionMeta = {

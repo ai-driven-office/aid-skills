@@ -12,7 +12,7 @@
 
 import sharp from "sharp";
 import { statSync, readdirSync, existsSync, mkdirSync } from "fs";
-import { join, basename, extname, resolve, dirname } from "path";
+import { join, basename, extname, resolve, dirname, relative } from "path";
 import { createInterface } from "readline";
 import type {
   CliArgs,
@@ -38,6 +38,17 @@ const FORMATS: Record<ImageFormat, FormatConfig> = {
   heif: { id: "heif", displayName: "HEIF", extensions: [".heif", ".heic"], mimeType: "image/heif", supportsHdr: true, supportsLossless: false, supportsAlpha: false, maxBitDepth: 10, defaultQuality: 80, defaultEffort: 0 },
   tiff: { id: "tiff", displayName: "TIFF", extensions: [".tiff", ".tif"], mimeType: "image/tiff", supportsHdr: false, supportsLossless: true, supportsAlpha: true, maxBitDepth: 32, defaultQuality: 100, defaultEffort: 0 },
 };
+
+const VALID_COLOR_SPACES = new Set(["srgb", "display-p3", "rec2020", "adobe-rgb"]);
+const VALID_CHROMA = new Set(["420", "422", "444"]);
+
+function parseOptionValue(argv: string[], i: number, flag: string): string {
+  const value = argv[i + 1];
+  if (value === undefined || value.startsWith("-")) {
+    throw new Error(`Missing value for ${flag}`);
+  }
+  return value;
+}
 
 // ── Arg Parsing ──────────────────────────────────────────────
 
@@ -66,28 +77,39 @@ function parseArgs(argv: string[]): CliArgs {
   while (i < argv.length) {
     const arg = argv[i];
     switch (arg) {
-      case "-f": case "--format": args.format = argv[++i] as ImageFormat; break;
-      case "-q": case "--quality": args.quality = parseInt(argv[++i], 10); break;
-      case "--bit-depth": args.bitDepth = parseInt(argv[++i], 10) as 8 | 10 | 12 | 16; break;
-      case "--color-space": args.colorSpace = argv[++i] as any; break;
+      case "-f": case "--format": args.format = parseOptionValue(argv, i, arg) as ImageFormat; i++; break;
+      case "-q": case "--quality": args.quality = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--bit-depth": args.bitDepth = parseInt(parseOptionValue(argv, i, arg), 10) as 8 | 10 | 12 | 16; i++; break;
+      case "--color-space": args.colorSpace = parseOptionValue(argv, i, arg) as any; i++; break;
       case "--lossless": args.lossless = true; break;
-      case "--effort": args.effort = parseInt(argv[++i], 10); break;
-      case "--chroma": args.chroma = argv[++i] as any; break;
+      case "--effort": args.effort = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--chroma": args.chroma = parseOptionValue(argv, i, arg) as any; i++; break;
       case "--strip": args.strip = true; args.keepMetadata = false; break;
       case "--keep-metadata": args.keepMetadata = true; break;
       case "--recursive": case "-r": args.recursive = true; break;
       case "--preserve-structure": args.preserveStructure = true; break;
       case "--skip-existing": args.skipExisting = true; break;
-      case "-c": case "--concurrency": args.concurrency = parseInt(argv[++i], 10); break;
-      case "--target": args.target = argv[++i]; break;
+      case "-c": case "--concurrency": args.concurrency = parseInt(parseOptionValue(argv, i, arg), 10); i++; break;
+      case "--target": args.target = parseOptionValue(argv, i, arg); i++; break;
       case "--generate": args.generate = true; break;
-      case "--quality-levels": args.qualities = argv[++i].split(",").map(Number); break;
-      case "-o": case "--output": args.output = argv[++i]; break;
-      case "--json": args.json = true; break;
+      case "--quality-levels":
+        args.qualities = parseOptionValue(argv, i, arg)
+          .split(",")
+          .map((q) => parseInt(q.trim(), 10))
+          .filter((q) => Number.isFinite(q));
+        i++;
+        break;
+      case "-o": case "--output": args.output = parseOptionValue(argv, i, arg); i++; break;
+      case "--json": args.json = true; args.yes = true; break;
       case "--yes": case "-y": args.yes = true; break;
       case "--dry-run": args.dryRun = true; break;
       case "--stdin": args.stdin = true; break;
-      default: if (!arg.startsWith("-")) positional.push(arg); break;
+      default:
+        if (arg.startsWith("-")) {
+          throw new Error(`Unknown option: ${arg}`);
+        }
+        positional.push(arg);
+        break;
     }
     i++;
   }
@@ -108,6 +130,36 @@ function parseArgs(argv: string[]): CliArgs {
   }
 
   return args;
+}
+
+function validateArgs(args: CliArgs): void {
+  if (args.format && !(args.format in FORMATS)) {
+    throw new Error(`Invalid format '${args.format}'. Use avif, webp, jpeg, png, jxl, heif, or tiff.`);
+  }
+  if (args.quality !== -1 && (!Number.isInteger(args.quality) || args.quality < 1 || args.quality > 100)) {
+    throw new Error("--quality must be an integer between 1 and 100");
+  }
+  if (args.effort !== -1 && (!Number.isInteger(args.effort) || args.effort < 0 || args.effort > 9)) {
+    throw new Error("--effort must be an integer between 0 and 9");
+  }
+  if (!Number.isInteger(args.concurrency) || args.concurrency <= 0) {
+    throw new Error("--concurrency must be a positive integer");
+  }
+  if (args.bitDepth !== undefined && (!Number.isInteger(args.bitDepth) || args.bitDepth < 8 || args.bitDepth > 32)) {
+    throw new Error("--bit-depth must be an integer between 8 and 32");
+  }
+  if (args.colorSpace && !VALID_COLOR_SPACES.has(args.colorSpace)) {
+    throw new Error("--color-space must be one of srgb, display-p3, rec2020, adobe-rgb");
+  }
+  if (args.chroma && !VALID_CHROMA.has(args.chroma)) {
+    throw new Error("--chroma must be one of 420, 422, 444");
+  }
+  if (args.qualities && args.qualities.some((q) => !Number.isInteger(q) || q < 1 || q > 100)) {
+    throw new Error("--quality-levels must be comma-separated integers between 1 and 100");
+  }
+  if (args.strip && args.keepMetadata) {
+    throw new Error("Use either --strip or --keep-metadata, not both");
+  }
 }
 
 // ── Utilities ────────────────────────────────────────────────
@@ -137,6 +189,23 @@ function outputPath(input: string, format: ImageFormat, outDir?: string, suffix?
   const ext = FORMATS[format].extensions[0];
   const name = suffix ? `${base}${suffix}${ext}` : `${base}${ext}`;
   return outDir ? join(outDir, name) : join(dirname(input), name);
+}
+
+function batchOutputPath(
+  rootDir: string,
+  input: string,
+  format: ImageFormat,
+  outDir: string,
+  preserveStructure: boolean,
+): string {
+  if (!preserveStructure) {
+    return outputPath(input, format, outDir);
+  }
+  const rel = relative(resolve(rootDir), resolve(input));
+  const outExt = FORMATS[format].extensions[0];
+  const relDir = dirname(rel);
+  const outName = `${basename(input, extname(input))}${outExt}`;
+  return resolve(join(outDir, relDir, outName));
 }
 
 async function confirm(message: string): Promise<boolean> {
@@ -171,10 +240,7 @@ async function convertImage(job: ConvertJob): Promise<ConvertResult> {
     pipeline = pipeline.toColorspace("srgb"); // sharp uses srgb internally, p3 via ICC
   }
 
-  // Strip metadata if requested
-  if (job.strip) {
-    pipeline = pipeline.withMetadata({ orientation: undefined });
-  } else {
+  if (job.keepMetadata) {
     pipeline = pipeline.withMetadata();
   }
 
@@ -247,6 +313,7 @@ async function cmdConvert(args: CliArgs): Promise<void> {
     effort: args.effort,
     chroma: args.chroma,
     strip: args.strip,
+    keepMetadata: args.keepMetadata,
   };
 
   if (args.dryRun) {
@@ -296,44 +363,55 @@ async function cmdBatch(args: CliArgs): Promise<void> {
   const results: ConvertResult[] = [];
   let totalInput = 0;
   let totalOutput = 0;
+  let nextIndex = 0;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const out = outputPath(file, args.format, outDir);
+  async function worker(): Promise<void> {
+    while (nextIndex < files.length) {
+      const idx = nextIndex++;
+      const file = files[idx];
+      const out = batchOutputPath(dir, file, args.format, outDir, args.preserveStructure);
 
-    if (args.skipExisting && existsSync(out)) {
-      process.stderr.write(`\r  Skipping ${basename(file)} (exists)  `);
-      continue;
-    }
+      if (args.skipExisting && existsSync(out)) {
+        process.stderr.write(`\r  Skipping ${basename(file)} (exists)  `);
+        continue;
+      }
 
-    process.stderr.write(`\r  Converting ${i + 1}/${files.length}: ${basename(file)}  `);
+      process.stderr.write(`\r  Converting ${idx + 1}/${files.length}: ${basename(file)}  `);
 
-    try {
-      const result = await convertImage({
-        input: resolve(file),
-        output: resolve(out),
-        format: args.format,
-        quality: args.quality,
-        lossless: args.lossless,
-        effort: args.effort,
-        strip: args.strip,
-        chroma: args.chroma,
-      });
-      results.push(result);
-      totalInput += result.inputSize;
-      totalOutput += result.outputSize;
-    } catch (err) {
-      console.error(`\n  Error: ${basename(file)}: ${(err as Error).message}`);
+      try {
+        const result = await convertImage({
+          input: resolve(file),
+          output: resolve(out),
+          format: args.format,
+          quality: args.quality,
+          lossless: args.lossless,
+          effort: args.effort,
+          strip: args.strip,
+          chroma: args.chroma,
+          keepMetadata: args.keepMetadata,
+        });
+        results.push(result);
+        totalInput += result.inputSize;
+        totalOutput += result.outputSize;
+      } catch (err) {
+        console.error(`\n  Error: ${basename(file)}: ${(err as Error).message}`);
+      }
     }
   }
 
+  const workers = Array.from({ length: Math.min(args.concurrency, files.length) }, () => worker());
+  await Promise.all(workers);
+
   process.stderr.write("\r" + " ".repeat(60) + "\r");
+  const reductionPercent = totalInput > 0
+    ? `${(((totalInput - totalOutput) / totalInput) * 100).toFixed(1)}%`
+    : "0.0%";
 
   if (args.json) {
-    console.log(JSON.stringify({ results, totalInput, totalOutput, reduction: `${(((totalInput - totalOutput) / totalInput) * 100).toFixed(1)}%` }, null, 2));
+    console.log(JSON.stringify({ results, totalInput, totalOutput, reduction: reductionPercent }, null, 2));
   } else {
     console.log(`\nDone: ${results.length}/${files.length} images converted`);
-    console.log(`  Total: ${humanSize(totalInput)} → ${humanSize(totalOutput)} (${(((totalInput - totalOutput) / totalInput) * 100).toFixed(1)}% reduction)`);
+    console.log(`  Total: ${humanSize(totalInput)} → ${humanSize(totalOutput)} (${reductionPercent} reduction)`);
     console.log(`  Output: ${outDir}`);
   }
 }
@@ -365,6 +443,7 @@ async function cmdCompare(args: CliArgs): Promise<void> {
           lossless: false,
           effort: FORMATS[fmt].defaultEffort,
           strip: false,
+          keepMetadata: true,
         });
         const outStat = statSync(out);
         results.push({
@@ -382,7 +461,16 @@ async function cmdCompare(args: CliArgs): Promise<void> {
     if (FORMATS[fmt].supportsLossless) {
       const out = join(outDir, `${basename(input, extname(input))}-${fmt}-lossless${FORMATS[fmt].extensions[0]}`);
       try {
-        await convertImage({ input: resolve(input), output: resolve(out), format: fmt, quality: 100, lossless: true, effort: FORMATS[fmt].defaultEffort, strip: false });
+        await convertImage({
+          input: resolve(input),
+          output: resolve(out),
+          format: fmt,
+          quality: 100,
+          lossless: true,
+          effort: FORMATS[fmt].defaultEffort,
+          strip: false,
+          keepMetadata: true,
+        });
         const outStat = statSync(out);
         results.push({ format: fmt, quality: 100, size: outStat.size, sizeHuman: humanSize(outStat.size), reductionPercent: `${(((inputStat.size - outStat.size) / inputStat.size) * 100).toFixed(1)}%`, path: out });
       } catch {}
@@ -466,14 +554,24 @@ async function cmdNegotiate(args: CliArgs): Promise<void> {
 
   const result: NegotiateResult = { input: basename(input), primaryFormat: primary, fallbackFormat: fallback, universalFormat: universal, recommendations };
 
-  if (args.generate && args.output) {
-    mkdirSync(args.output, { recursive: true });
+  if (args.generate) {
+    const generateOutDir = args.output || join(dirname(resolve(input)), `negotiated-${basename(input, extname(input))}`);
+    mkdirSync(generateOutDir, { recursive: true });
     const generatedFiles: string[] = [];
 
     for (const fmt of [primary, fallback, universal]) {
-      const out = outputPath(input, fmt, args.output);
+      const out = outputPath(input, fmt, generateOutDir);
       if (!existsSync(out)) {
-        await convertImage({ input: resolve(input), output: resolve(out), format: fmt, quality: FORMATS[fmt].defaultQuality, lossless: false, effort: FORMATS[fmt].defaultEffort, strip: false });
+        await convertImage({
+          input: resolve(input),
+          output: resolve(out),
+          format: fmt,
+          quality: FORMATS[fmt].defaultQuality,
+          lossless: false,
+          effort: FORMATS[fmt].defaultEffort,
+          strip: false,
+          keepMetadata: true,
+        });
       }
       generatedFiles.push(out);
     }
@@ -551,6 +649,7 @@ Piping:
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+  validateArgs(args);
 
   switch (args.command) {
     case "convert": await cmdConvert(args); break;

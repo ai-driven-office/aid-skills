@@ -1,0 +1,21 @@
+{
+  "source": "sample.jpg",
+  "variants": [
+    {
+      "path": ".uhd/test/optimized-social/sample.jpg",
+      "format": "jpeg",
+      "width": 800,
+      "height": 600,
+      "size": 11520,
+      "sizeHuman": "11.3 KB"
+    },
+    {
+      "path": ".uhd/test/optimized-social/sample.avif",
+      "format": "avif",
+      "width": 800,
+      "height": 600,
+      "size": 4423,
+      "sizeHuman": "4.3 KB"
+    }
+  ]
+}

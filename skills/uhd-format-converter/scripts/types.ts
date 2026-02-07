@@ -57,6 +57,7 @@ export interface ConvertJob {
   effort: number;
   chroma?: ChromaSubsampling;
   strip: boolean;
+  keepMetadata: boolean;
 }
 
 export interface ConvertResult {

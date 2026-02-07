@@ -12,6 +12,8 @@
  */
 
 import sharp from "sharp";
+import { encode as encodeBlurhash } from "blurhash";
+import * as ThumbHash from "thumbhash";
 import { statSync, readdirSync, existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
 import { join, basename, extname, resolve, dirname } from "path";
 import { createInterface } from "readline";
@@ -131,7 +133,7 @@ function parseArgs(argv: string[]): CliArgs {
       case "-c": case "--concurrency": args.concurrency = parseInt(argv[++i], 10); break;
       case "-o": case "--output": args.output = argv[++i]; break;
       case "--platform": args.platform = argv[++i]; break;
-      case "--json": args.json = true; break;
+      case "--json": args.json = true; args.yes = true; break;
       case "--yes": case "-y": args.yes = true; break;
       case "--dry-run": args.dryRun = true; break;
       case "--stdin": args.stdin = true; break;
@@ -195,12 +197,16 @@ function loadPlatforms(): Record<string, PlatformProfile> {
 
 async function generateLqip(inputPath: string, type: LqipType): Promise<LqipResult> {
   if (type === "blurhash") {
-    // Resize to tiny then extract raw pixel data for blurhash
     const { data, info } = await sharp(inputPath).resize(32, 32, { fit: "inside" }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    // Simple blurhash-like encoding (compact representation)
-    // In production, use the blurhash package
-    const base64 = data.subarray(0, 64).toString("base64").slice(0, 28);
-    return { type: "blurhash", value: base64, size: base64.length };
+    const hash = encodeBlurhash(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+    return { type: "blurhash", value: hash, size: hash.length };
+  }
+
+  if (type === "thumbhash") {
+    const { data, info } = await sharp(inputPath).resize(100, 100, { fit: "inside" }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const hash = ThumbHash.rgbaToThumbHash(info.width, info.height, data);
+    const b64 = Buffer.from(hash).toString("base64");
+    return { type: "thumbhash", value: b64, size: b64.length };
   }
 
   if (type === "micro") {
@@ -211,7 +217,6 @@ async function generateLqip(inputPath: string, type: LqipType): Promise<LqipResu
   }
 
   if (type === "css") {
-    // Generate a 2-color CSS gradient from dominant colors
     const { dominant } = await sharp(inputPath).resize(2, 2).stats();
     const color = `rgb(${dominant.r},${dominant.g},${dominant.b})`;
     const value = `background:${color}`;
@@ -278,7 +283,7 @@ async function optimizeImage(input: string, outDir: string, preset: PresetConfig
   const lqipType = args.lqip || preset.lqip;
   if (lqipType) {
     lqip = await generateLqip(resolve(input), lqipType);
-    if (lqip.type === "blurhash" || lqip.type === "css") {
+    if (lqip.type === "blurhash" || lqip.type === "thumbhash" || lqip.type === "css") {
       writeFileSync(join(outDir, `${baseName}-lqip.txt`), lqip.value);
     }
   }

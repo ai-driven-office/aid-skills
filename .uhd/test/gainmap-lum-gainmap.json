@@ -1,0 +1,31 @@
+{
+  "createdAt": "2026-02-07T14:40:00.428Z",
+  "sdrSource": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/sample.jpg",
+  "hdrSource": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/sample-edited.jpg",
+  "output": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/gainmap-lum.jpg",
+  "gainMapPath": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/gainmap-lum-gainmap.png",
+  "heatmapPath": "/Users/a12907/Documents/GitHub/aid-skills/.uhd/test/gainmap-lum-heatmap.png",
+  "type": "luminosity",
+  "standard": "both",
+  "headroom": 2,
+  "minHeadroom": 0,
+  "mapWidth": 800,
+  "mapHeight": 600,
+  "mapBitDepth": 8,
+  "sdrWidth": 800,
+  "sdrHeight": 600,
+  "sdrColorSpace": "sRGB",
+  "hdrColorSpace": "Display-P3",
+  "gamma": 1,
+  "stats": {
+    "min": 1,
+    "max": 3.041,
+    "mean": 1.234,
+    "stdDev": 0.219
+  },
+  "coverage": {
+    "highlightPercent": 2.4,
+    "shadowPercent": 0,
+    "neutralPercent": 97.6
+  }
+}
