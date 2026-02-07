@@ -1,13 +1,29 @@
 ---
-name: fal-text-to-image
-description: AI image generation using fal.ai. Generates images from text prompts using Seedream v4.5 (creative/photos/cute/artistic) or Nano Banana Pro (accurate text rendering/complex prompts/intelligent). Use when you need to generate, create, or produce images from descriptions.
+name: uhd-text-to-image
+description: UHD image generation system. Generates images from text prompts using Seedream v4.5 (creative/photos/cute/artistic) or Nano Banana Pro (accurate text rendering/complex prompts/intelligent). Use when you need to generate, create, or produce images from descriptions. Includes session-based workflow with browser review picker, refinement loops, and finalization.
 vm0_secrets:
   - FAL_KEY
 ---
 
-# fal.ai Image Generator
+# UHD Image Generator
 
-Generate images from text prompts using two best-in-class models. Choose the right model for the job, set your mode, and generate.
+Generate images from text prompts using two best-in-class models. UHD provides a session-based workflow: generate, review in-browser, refine, and finalize.
+
+## Workflow
+
+```
+ 1. GENERATE          2. REVIEW           3. REFINE          4. FINALIZE
+ ┌──────────┐       ┌──────────┐       ┌──────────┐       ┌──────────┐
+ │ AI crafts │──────>│ Browser  │──────>│ Regen    │──────>│ Copy to  │
+ │ prompts + │       │ picker:  │       │ modified │       │ project  │
+ │ generates │       │ keep /   │  ┌───>│ prompts  │       │ folder   │
+ │ images    │       │ reject / │  │    │          │       │          │
+ └──────────┘       │ regen    │──┘    └────┬─────┘       └──────────┘
+                    └──────────┘            │
+                         ^                  │
+                         └──────────────────┘
+                           review again
+```
 
 ## Model Selection
 
@@ -51,7 +67,6 @@ Generate images from text prompts using two best-in-class models. Choose the rig
 
 ```bash
 export FAL_KEY="your-api-key"
-mkdir -p /tmp/fal
 ```
 
 ### Seedream v4.5 Parameters
@@ -81,149 +96,95 @@ mkdir -p /tmp/fal
 }
 ```
 
-## Usage — curl
+## Session Storage
 
-### Seedream: Generate a creative image
+All generated images and metadata are stored in `.uhd/` (project-local, gitignored):
 
-Write to `/tmp/fal/request.json`:
-
-```json
-{
-  "prompt": "A white kitten sleeping inside a teacup on a sunlit windowsill, soft bokeh background, warm golden light, shallow depth of field, 85mm lens",
-  "image_size": "auto_2K",
-  "num_images": 1
-}
+```
+.uhd/
+└── sessions/
+    └── 20260207-143052-sunset/    # Session ID: YYYYMMDD-HHMMSS-<slug>
+        ├── meta.json              # Jobs, results, costs, status
+        ├── selections.json        # User choices from review
+        └── images/                # All generated images
+            ├── sunset-1.png
+            └── sunset-2.png
 ```
 
-Then:
+## CLI Tool (Bun/TypeScript)
+
+Full CLI for session-based generation, browser review, refinement loops, and finalization.
+
+### Setup
 
 ```bash
-bash -c 'curl -s -X POST "https://fal.run/fal-ai/bytedance/seedream/v4.5/text-to-image" -H "Authorization: Key ${FAL_KEY}" -H "Content-Type: application/json" -d @/tmp/fal/request.json' > /tmp/fal/response.json
+cd skills/uhd-text-to-image/scripts && bun install
+export FAL_KEY="your-api-key"
 ```
 
-### Nano Banana: Generate with text and web search
-
-Write to `/tmp/fal/request.json`:
-
-```json
-{
-  "prompt": "A professional conference badge design with the text 'AI Summit 2026' in bold sans-serif, blue gradient background, modern tech aesthetic",
-  "resolution": "2K",
-  "aspect_ratio": "3:4",
-  "num_images": 1,
-  "enable_web_search": true
-}
-```
-
-Then:
+### Commands
 
 ```bash
-bash -c 'curl -s -X POST "https://fal.run/fal-ai/nano-banana-pro" -H "Authorization: Key ${FAL_KEY}" -H "Content-Type: application/json" -d @/tmp/fal/request.json' > /tmp/fal/response.json
+# Generate from a single prompt (auto-selects model)
+bun uhd.ts generate "A white kitten in a teacup" --num 2
+
+# Force a specific model
+bun uhd.ts generate "Badge with 'AI Summit'" -m banana --web-search
+
+# Compare both models side-by-side
+bun uhd.ts compare "A cozy cafe at sunset"
+
+# Batch generate from a manifest file
+bun uhd.ts batch manifest.json -c 4
+
+# Open browser review picker (latest session)
+bun uhd.ts review
+
+# Regenerate images marked for regen in review
+bun uhd.ts refine
+
+# Copy selected images to project directory
+bun uhd.ts finalize --dest ./images
+
+# List all sessions
+bun uhd.ts sessions
+
+# Delete a session or all sessions
+bun uhd.ts clean [session-id]
+bun uhd.ts clean --all
+
+# Preview cost without generating (dry-run)
+bun uhd.ts generate "A sunset" --dry-run
+
+# JSON output for automation (skips confirmation)
+bun uhd.ts generate "A sunset" --json --yes
 ```
 
-### Extract image URL and download
+Every command shows a cost estimate and asks for confirmation before generating. Use `--yes` to skip (for agents), `--json` for structured output, or `--dry-run` to preview only.
 
-```bash
-bash -c 'cat /tmp/fal/response.json | jq -r ".images[0].url"'
-```
+### Auto-Model Selection
 
-```bash
-bash -c 'cat /tmp/fal/response.json | jq -r ".images[0].url" | xargs curl -sL -o /tmp/fal/image.png'
-```
+When `--model auto` (default), the CLI inspects the prompt for text-rendering cues (quoted strings, "typography", "badge", "infographic", etc.) and routes to **Banana** for text-heavy prompts or **Seedream** for everything else.
 
-### Batch: Generate 4 images at 4K
+### Review Picker
 
-Write to `/tmp/fal/request.json`:
+`bun uhd.ts review` starts a local Bun HTTP server and auto-opens the browser. The dark-themed UI shows:
+- Responsive grid of image cards with model badges
+- Click any image for a lightbox view
+- Three actions per card: **Keep** (green) / **Reject** (red) / **Regen** (yellow)
+- Regen expands a panel with editable prompt and count selector
+- Sticky summary bar with counts and "Save & Close" button
 
-```json
-{
-  "prompt": "Abstract geometric art, neon blue and magenta on black, flowing particles",
-  "image_size": "auto_4K",
-  "num_images": 4
-}
-```
+### Refinement Loop
 
-```bash
-bash -c 'curl -s -X POST "https://fal.run/fal-ai/bytedance/seedream/v4.5/text-to-image" -H "Authorization: Key ${FAL_KEY}" -H "Content-Type: application/json" -d @/tmp/fal/request.json' > /tmp/fal/response.json
-```
+1. After review, run `bun uhd.ts refine` to regenerate images marked "regen"
+2. New images are generated in the same session with modified prompts
+3. Run `bun uhd.ts review` again to see all images (originals + refined)
+4. Repeat until satisfied
 
-Download all images from the response:
+### Finalization
 
-```bash
-bash -c 'for i in $(seq 0 3); do url=$(jq -r ".images[$i].url" /tmp/fal/response.json); [ "$url" != "null" ] && curl -sL -o "/tmp/fal/image_${i}.png" "$url" && echo "Saved image_${i}.png"; done'
-```
-
-### Generate with both models (comparison)
-
-Write Seedream request to `/tmp/fal/req_seedream.json` and Nano Banana request to `/tmp/fal/req_banana.json`, then run both:
-
-```bash
-bash -c 'curl -s -X POST "https://fal.run/fal-ai/bytedance/seedream/v4.5/text-to-image" -H "Authorization: Key ${FAL_KEY}" -H "Content-Type: application/json" -d @/tmp/fal/req_seedream.json' > /tmp/fal/resp_seedream.json &
-bash -c 'curl -s -X POST "https://fal.run/fal-ai/nano-banana-pro" -H "Authorization: Key ${FAL_KEY}" -H "Content-Type: application/json" -d @/tmp/fal/req_banana.json' > /tmp/fal/resp_banana.json &
-wait
-```
-
-## Usage — Node.js SDK
-
-For batch operations or better error handling, use the `@fal-ai/client` npm package.
-
-```bash
-npm install @fal-ai/client
-```
-
-```js
-import { fal } from "@fal-ai/client";
-
-// Seedream
-const result = await fal.subscribe("fal-ai/bytedance/seedream/v4.5/text-to-image", {
-  input: {
-    prompt: "A dreamy watercolor landscape of Mount Fuji at sunrise",
-    image_size: "auto_4K",
-    num_images: 4
-  }
-});
-
-// Nano Banana Pro
-const result = await fal.subscribe("fal-ai/nano-banana-pro", {
-  input: {
-    prompt: "Infographic showing '5 Steps to AI Adoption' with icons",
-    resolution: "2K",
-    aspect_ratio: "9:16",
-    num_images: 1,
-    enable_web_search: true
-  }
-});
-
-// Access results
-result.data.images.forEach((img, i) => console.log(`Image ${i}: ${img.url}`));
-```
-
-## MCP Integration
-
-fal.ai provides an MCP server for direct IDE integration. Add to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "fal": {
-      "url": "https://docs.fal.ai/mcp"
-    }
-  }
-}
-```
-
-This gives the agent access to fal documentation and model details directly.
-
-## File Handling
-
-| Purpose | Path |
-|---------|------|
-| Request JSON | `/tmp/fal/request.json` |
-| Response JSON | `/tmp/fal/response.json` |
-| Downloaded images | `/tmp/fal/image.png`, `/tmp/fal/image_0.png` ... |
-| Project output | `./generated/` (create if in a project context) |
-
-Always `mkdir -p /tmp/fal` before first use. Images at fal CDN URLs expire after 30 days.
+`bun uhd.ts finalize -d ./output` copies all "keep" images to the destination directory.
 
 ## Aspect Ratio Quick Reference
 
@@ -234,6 +195,7 @@ Always `mkdir -p /tmp/fal` before first use. Images at fal CDN URLs expire after
 | Portrait tall | `portrait_16_9` | `9:16` |
 | Photo standard | `landscape_4_3` | `4:3` |
 | Ultrawide | — | `21:9` |
+
 
 ## Reference Files
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UHD Review — {{SESSION_ID}}</title>
+  <style>{{CSS}}</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>UHD Review <span>/ {{SESSION_ID}}</span></h1>
+  <div class="header-stats">
+    <span><b>{{IMAGE_COUNT}}</b> images</span>
+    <span><b>{{JOB_COUNT}}</b> jobs</span>
+    <span>Cost: <b>{{TOTAL_COST}}</b></span>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="summary" id="summary">
+  <div class="summary-counts">
+    <span class="keep-count" id="keepCount">Keep: 0</span>
+    <span class="reject-count" id="rejectCount">Reject: 0</span>
+    <span class="regen-count" id="regenCount">Regen: 0</span>
+    <span class="unset-count" id="unsetCount">Unset: 0</span>
+  </div>
+  <button class="btn-save" id="saveBtn">Save &amp; Close</button>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>{{JS}}</script>
+</body>
+</html>
