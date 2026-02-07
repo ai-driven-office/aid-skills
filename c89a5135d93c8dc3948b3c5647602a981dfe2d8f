@@ -1,0 +1,145 @@
+skills/uhd-text-to-image/scripts/review/page.html
+  5c1a9e0372386bd4 6,12-21,24,33-35
+skills/uhd-image-analyzer/scripts/types.ts
+  8fa1d61937e7a841 1-132
+skills/uhd-text-to-image/scripts/review/client.js
+  5c1a9e0372386bd4 2,6-7,11-14,19-23,27-38,40-47,50-60,71-73,75-132,134-146,149,152,160,166-174,176-179,181-182,184-185,187,189-190,192-193,195-219,230-239,241-244,252-256,259,263-268,272-274,280-288,293-296,300-301,309-314,316-317,343-357,359,364-391,393-394,409-410,415-455,459
+skills/uhd-image-sdr-to-hdr/scripts/types.ts
+  8fa1d61937e7a841 1-108
+skills/uhd-image-optimization/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-format-converter/scripts/types.ts
+  8fa1d61937e7a841 1-112
+skills/uhd-image-analyzer/scripts/package.json
+  8fa1d61937e7a841 1-13
+skills/uhd-image-optimization/scripts/package.json
+  8fa1d61937e7a841 1-5,7-11
+skills/uhd-text-to-image/scripts/review/server.ts
+  5c1a9e0372386bd4 4-5,11,59-61,64-65,68-73,106-121,125-127,130-131,133-134,141,143-147,152-156,158-159,164,167-172,180-181,188,191-208,217-221
+skills/uhd-text-to-image/scripts/uhd.ts
+  5c1a9e0372386bd4 484-485,487-495
+skills/uhd-image-optimization/SKILL.md
+  8fa1d61937e7a841 1-178
+skills/uhd-image-sdr-to-hdr/reference/hdr-formats.md
+  8fa1d61937e7a841 1-62
+skills/uhd-gain-map-editor/reference/iso-21496-1.md
+  8fa1d61937e7a841 1-99
+skills/uhd-image-sdr-to-hdr/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-gain-map-editor/scripts/package.json
+  8fa1d61937e7a841 1-12
+skills/uhd-gain-map-editor/SKILL.md
+  8fa1d61937e7a841 1-184
+skills/uhd-format-converter/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-image-upscaler/scripts/package.json
+  8fa1d61937e7a841 1-5,7-12
+skills/uhd-image-upscaler/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-format-converter/scripts/package.json
+  8fa1d61937e7a841 1-11
+skills/uhd-text-to-image/scripts/session.ts
+  46a1e59126499d5a 8,43,45,48-54,59,128,135-138,141,146-147
+skills/uhd-image-analyzer/scripts/analyze.ts
+  8fa1d61937e7a841 1-748
+skills/uhd-image-sdr-to-hdr/scripts/package.json
+  8fa1d61937e7a841 1-5,7-12
+skills/uhd-image-optimization/reference/cwv-guide.md
+  8fa1d61937e7a841 1-112
+skills/uhd-image-upscaler/scripts/types.ts
+  8fa1d61937e7a841 1-93
+skills/uhd-image-analyzer/SKILL.md
+  8fa1d61937e7a841 1-119
+skills/uhd-gain-map-editor/scripts/types.ts
+  8fa1d61937e7a841 1-146
+skills/uhd-image-optimization/scripts/types.ts
+  8fa1d61937e7a841 1-143
+skills/uhd-image-sdr-to-hdr/scripts/sdr-to-hdr.ts
+  8fa1d61937e7a841 1-543
+skills/uhd-image-sdr-to-hdr/SKILL.md
+  8fa1d61937e7a841 1-158
+skills/uhd-image-optimization/scripts/optimize.ts
+  8fa1d61937e7a841 1-658
+skills/uhd-image-upscaler/scripts/upscale.ts
+  8fa1d61937e7a841 1-471
+skills/uhd-image-analyzer/reference/browser-compat.md
+  8fa1d61937e7a841 1-61
+skills/uhd-gain-map-editor/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-text-to-image/scripts/review/styles.css
+  5c1a9e0372386bd4 29-148,155,323,340-353
+skills/uhd-gain-map-editor/scripts/gainmap.ts
+  8fa1d61937e7a841 1-647
+skills/uhd-text-to-image/scripts/package.json
+  8fa1d61937e7a841 6-7
+skills/uhd-format-converter/scripts/convert.ts
+  8fa1d61937e7a841 1-567
+skills/uhd-format-converter/SKILL.md
+  8fa1d61937e7a841 1-146
+skills/uhd-text-to-image/scripts/review/template.ts
+  5c1a9e0372386bd4 29,39-48,55,81-90,96-97,99-100,103-104,106-107,110-127,130-132
+  afe3f16782890a58 105,133-134
+skills/uhd-image-analyzer/scripts/.gitignore
+  8fa1d61937e7a841 1
+skills/uhd-image-upscaler/SKILL.md
+  8fa1d61937e7a841 1-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "c89a5135d93c8dc3948b3c5647602a981dfe2d8f",
+  "prompts": {
+    "46a1e59126499d5a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c77e57d7-c6f7-4a5a-9f54-b33f2ed1d503",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 5,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    },
+    "5c1a9e0372386bd4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03d3f27c-a27c-439e-bc24-b0a6d9491942",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 669,
+      "total_deletions": 224,
+      "accepted_lines": 619,
+      "overriden_lines": 0
+    },
+    "8fa1d61937e7a841": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d579015a-c132-4963-9e40-df35dfe06f39",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 5729,
+      "total_deletions": 7,
+      "accepted_lines": 5720,
+      "overriden_lines": 3
+    },
+    "afe3f16782890a58": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d63d8654-3a95-4761-a8b7-c3992dbae193",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 7,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
