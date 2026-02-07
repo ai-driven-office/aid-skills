@@ -1,0 +1,38 @@
+{
+  "id": "20260207-220749-dramatic-sunset-over-mount-fuj",
+  "createdAt": "2026-02-07T13:07:49.661Z",
+  "command": "generate",
+  "status": "reviewed",
+  "jobs": [
+    {
+      "prompt": "Dramatic sunset over Mount Fuji with cherry blossom trees in the foreground, golden hour, vibrant orange and pink sky reflected in a still lake",
+      "model": "seedream",
+      "numImages": 2,
+      "cost": 0.08,
+      "round": 0,
+      "params": {
+        "imageSize": "auto_2K",
+        "resolution": "2K",
+        "aspectRatio": "auto",
+        "outputFormat": "png"
+      },
+      "images": [
+        {
+          "filename": "dramatic-sunset-over-mount-fuji-cherry-blossom-1.png",
+          "width": 0,
+          "height": 0,
+          "requestId": "bdc3777c-2fc4-494a-9b90-46028853a376",
+          "url": "https://v3b.fal.media/files/b/0a8d85ba/2_etRyeQmKdNJwzZRCHrd_524c8a0102ba4776b31add2347e2016e.png"
+        },
+        {
+          "filename": "dramatic-sunset-over-mount-fuji-cherry-blossom-2.png",
+          "width": 0,
+          "height": 0,
+          "requestId": "bdc3777c-2fc4-494a-9b90-46028853a376",
+          "url": "https://v3b.fal.media/files/b/0a8d85ba/tZBVhlrIjSWF05kfa07UQ_aa09dd0e96c64831a24a9838cb54afc7.png"
+        }
+      ]
+    }
+  ],
+  "totalCost": 0.08
+}

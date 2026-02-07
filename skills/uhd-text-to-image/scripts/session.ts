@@ -5,6 +5,7 @@ import { slugifyPrompt } from "./naming.ts";
 
 const UHD_DIR = ".uhd";
 const SESSIONS_DIR = join(UHD_DIR, "sessions");
+const CACHE_DIR = join(UHD_DIR, "cache");
 
 /** Get the sessions root directory */
 export function getSessionsDir(): string {
@@ -39,13 +40,23 @@ export function getSessionDir(sessionId: string): string {
   return join(SESSIONS_DIR, sessionId);
 }
 
-/** Get the images directory for a session */
+/** Get the images directory for a session (in cache, gitignored) */
 export function getImagesDir(sessionId: string): string {
-  return join(getSessionDir(sessionId), "images");
+  return join(CACHE_DIR, sessionId);
+}
+
+/** Ensure .uhd/.gitignore exists to ignore the cache directory */
+function ensureUhdGitignore(): void {
+  const gitignorePath = join(UHD_DIR, ".gitignore");
+  if (!existsSync(gitignorePath)) {
+    mkdirSync(UHD_DIR, { recursive: true });
+    writeFileSync(gitignorePath, "cache/\n");
+  }
 }
 
 /** Create a new session directory and return its ID */
 export function createSession(hint: string, command: string): { id: string; dir: string; imagesDir: string } {
+  ensureUhdGitignore();
   const id = generateUniqueSessionId(hint);
   const dir = getSessionDir(id);
   const imagesDir = getImagesDir(id);
@@ -114,19 +125,26 @@ export function getLatestSession(): string | null {
   return sessions.length > 0 ? sessions[0] : null;
 }
 
-/** Delete a session */
+/** Delete a session (metadata + cached images) */
 export function deleteSession(sessionId: string): void {
   const dir = getSessionDir(sessionId);
   if (!existsSync(dir)) {
     throw new Error(`Session not found: ${sessionId}`);
   }
   rmSync(dir, { recursive: true, force: true });
+  const cacheDir = getImagesDir(sessionId);
+  if (existsSync(cacheDir)) {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
 }
 
-/** Delete all sessions */
+/** Delete all sessions (metadata + cached images) */
 export function deleteAllSessions(): void {
   if (existsSync(SESSIONS_DIR)) {
     rmSync(SESSIONS_DIR, { recursive: true, force: true });
+  }
+  if (existsSync(CACHE_DIR)) {
+    rmSync(CACHE_DIR, { recursive: true, force: true });
   }
 }
 

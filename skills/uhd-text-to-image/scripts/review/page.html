@@ -3,21 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UHD Review — {{SESSION_ID}}</title>
+  <title>{{TITLE}}</title>
   <style>{{CSS}}</style>
 </head>
 <body>
 
 <div class="header">
-  <h1>UHD Review <span>/ {{SESSION_ID}}</span></h1>
-  <div class="header-stats">
-    <span><b>{{IMAGE_COUNT}}</b> images</span>
-    <span><b>{{JOB_COUNT}}</b> jobs</span>
-    <span>Cost: <b>{{TOTAL_COST}}</b></span>
-  </div>
+  <h1>{{HEADER_TITLE}}</h1>
+  <div class="header-stats">{{HEADER_STATS}}</div>
 </div>
 
-<div class="grid" id="grid"></div>
+<div class="filter-bar" id="filterBar">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="generated">Generated</button>
+  <button class="filter-btn" data-filter="reviewed">Reviewed</button>
+  <button class="filter-btn" data-filter="refined">Refined</button>
+  <button class="filter-btn" data-filter="finalized">Finalized</button>
+</div>
+
+<div class="sessions-container" id="sessionsContainer"></div>
 
 <div class="summary" id="summary">
   <div class="summary-counts">
@@ -26,7 +30,10 @@
     <span class="regen-count" id="regenCount">Regen: 0</span>
     <span class="unset-count" id="unsetCount">Unset: 0</span>
   </div>
-  <button class="btn-save" id="saveBtn">Save &amp; Close</button>
+  <div class="summary-actions">
+    <button class="btn-save" id="saveAllBtn">Save All</button>
+    <button class="btn-done" id="doneBtn">Done</button>
+  </div>
 </div>
 
 <div class="lightbox" id="lightbox">

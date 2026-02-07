@@ -1,0 +1,13 @@
+{
+  "name": "uhd-image-analyzer-cli",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "sharp": "^0.34.5",
+    "exif-reader": "^2.0.3",
+    "icc": "^3.0.0",
+    "ssim.js": "^3.5.0",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0"
+  }
+}

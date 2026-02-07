@@ -26,6 +26,7 @@ function esc(str: string): string {
 }
 
 interface ReviewImage {
+  sessionId: string;
   filename: string;
   prompt: string;
   model: string;
@@ -35,12 +36,23 @@ interface ReviewImage {
   jobIndex: number;
 }
 
+interface SessionData {
+  id: string;
+  createdAt: string;
+  command: string;
+  status: string;
+  totalCost: number;
+  images: ReviewImage[];
+  selections: Record<string, { status: string; newPrompt?: string; numImages?: number }>;
+}
+
 function flattenImages(meta: SessionMeta): ReviewImage[] {
   const out: ReviewImage[] = [];
   for (let ji = 0; ji < meta.jobs.length; ji++) {
     const job = meta.jobs[ji];
     for (const img of job.images) {
       out.push({
+        sessionId: meta.id,
         filename: img.filename,
         prompt: job.prompt,
         model: job.model,
@@ -66,21 +78,58 @@ function buildSelectionsMap(
   return map;
 }
 
+function buildSessionData(meta: SessionMeta, selections: SelectionSet | null): SessionData {
+  return {
+    id: meta.id,
+    createdAt: meta.createdAt,
+    command: meta.command,
+    status: meta.status,
+    totalCost: meta.totalCost,
+    images: flattenImages(meta),
+    selections: buildSelectionsMap(selections),
+  };
+}
+
 // ── Public API ───────────────────────────────────────────────
 
-export function buildReviewHtml(meta: SessionMeta, selections: SelectionSet | null): string {
-  const images = flattenImages(meta);
-  const selMap = buildSelectionsMap(selections);
+export function buildReviewHtml(
+  sessions: Array<{ meta: SessionMeta; selections: SelectionSet | null }>,
+  mode: "single" | "multi",
+): string {
+  const sessionsData = sessions.map(({ meta, selections }) =>
+    buildSessionData(meta, selections),
+  );
+
+  const totalImages = sessionsData.reduce((sum, s) => sum + s.images.length, 0);
+  const totalCost = sessionsData.reduce((sum, s) => sum + s.totalCost, 0);
+
+  const sessionsJson = JSON.stringify(sessionsData);
+  const modeJson = JSON.stringify(mode);
 
   const js = CLIENT_JS
-    .replace("__IMAGES__", JSON.stringify(images))
-    .replace("__SELECTIONS__", JSON.stringify(selMap));
+    .replaceAll("__SESSIONS_DATA__", () => sessionsJson)
+    .replaceAll("__MODE__", () => modeJson);
+
+  const title = mode === "single"
+    ? `UHD Review — ${esc(sessionsData[0].id)}`
+    : `UHD Review — ${sessionsData.length} sessions`;
+
+  const headerTitle = mode === "single"
+    ? `UHD Review <span>/ ${esc(sessionsData[0].id)}</span>`
+    : `UHD Review`;
+
+  const headerStats = mode === "single"
+    ? `<span><b>${totalImages}</b> images</span>
+       <span><b>${sessionsData[0].images.length > 0 ? sessions[0].meta.jobs.length : 0}</b> jobs</span>
+       <span>Cost: <b>${esc(formatCost(totalCost))}</b></span>`
+    : `<span><b>${sessionsData.length}</b> sessions</span>
+       <span><b>${totalImages}</b> images</span>
+       <span>Cost: <b>${esc(formatCost(totalCost))}</b></span>`;
 
   return PAGE_HTML
-    .replace(/\{\{SESSION_ID\}\}/g, esc(meta.id))
-    .replace("{{IMAGE_COUNT}}", String(images.length))
-    .replace("{{JOB_COUNT}}", String(meta.jobs.length))
-    .replace("{{TOTAL_COST}}", esc(formatCost(meta.totalCost)))
-    .replace("{{CSS}}", STYLES_CSS)
-    .replace("{{JS}}", js);
+    .replace("{{TITLE}}", () => title)
+    .replace("{{HEADER_TITLE}}", () => headerTitle)
+    .replace("{{HEADER_STATS}}", () => headerStats)
+    .replace("{{CSS}}", () => STYLES_CSS)
+    .replace("{{JS}}", () => js);
 }

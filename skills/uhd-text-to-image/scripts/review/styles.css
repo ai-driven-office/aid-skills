@@ -26,14 +26,133 @@ body {
 .header-stats { display: flex; gap: 16px; font-size: 13px; color: #888; }
 .header-stats b { color: #ccc; }
 
+/* ── Filter Bar ─────────────────────────────────────────── */
+
+.filter-bar {
+  padding: 12px 24px;
+  border-bottom: 1px solid #222;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-bar.hidden { display: none; }
+
+.filter-btn {
+  padding: 6px 14px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover { border-color: #555; color: #ccc; }
+.filter-btn.active { border-color: #2563eb; color: #fff; background: #1e3a5f; }
+
+/* ── Sessions Container ─────────────────────────────────── */
+
+.sessions-container {
+  padding-bottom: 80px;
+}
+
+/* ── Session Block ──────────────────────────────────────── */
+
+.session-block {
+  border-bottom: 1px solid #222;
+}
+
+.session-block.hidden { display: none; }
+
+.session-header {
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  flex-wrap: wrap;
+}
+
+.session-header:hover { background: #151515; }
+
+.session-toggle {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s;
+  width: 16px;
+  text-align: center;
+}
+
+.session-block.collapsed .session-toggle { transform: rotate(-90deg); }
+
+.session-id {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ccc;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.generated  { background: #1e3a5f; color: #60a5fa; }
+.status-badge.reviewed   { background: #365314; color: #86efac; }
+.status-badge.refined    { background: #713f12; color: #fde047; }
+.status-badge.finalized  { background: #4c1d95; color: #c4b5fd; }
+
+.session-stats {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  gap: 12px;
+}
+
+.session-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.session-actions button {
+  padding: 4px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.session-actions button:hover { border-color: #555; color: #ccc; }
+
+.btn-keep-all:hover  { border-color: #22c55e; color: #22c55e; }
+.btn-reject-all:hover { border-color: #ef4444; color: #ef4444; }
+.btn-finalize:hover { border-color: #a78bfa; color: #a78bfa; }
+
+.session-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.session-block.collapsed .session-body { display: none; }
+
 /* ── Grid ────────────────────────────────────────────────── */
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
-  padding: 24px;
-  padding-bottom: 80px;
+  padding: 16px 24px;
 }
 
 /* ── Cards ───────────────────────────────────────────────── */
@@ -201,6 +320,8 @@ body {
 .summary-counts .regen-count  { color: #eab308; }
 .summary-counts .unset-count  { color: #888; }
 
+.summary-actions { display: flex; gap: 8px; }
+
 .btn-save {
   padding: 10px 24px;
   background: #2563eb;
@@ -215,6 +336,21 @@ body {
 
 .btn-save:hover    { background: #1d4ed8; }
 .btn-save:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+.btn-done {
+  padding: 10px 24px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-done:hover    { background: #15803d; }
+.btn-done:disabled { background: #333; color: #666; cursor: not-allowed; }
 
 /* ── Lightbox ────────────────────────────────────────────── */
 

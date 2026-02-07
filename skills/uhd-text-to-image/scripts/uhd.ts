@@ -481,8 +481,18 @@ async function cmdCompare(args: CliArgs): Promise<void> {
 }
 
 async function cmdReview(args: CliArgs): Promise<void> {
-  const sessionId = resolveSessionId(args.sessionId);
-  await startReviewServer(sessionId);
+  if (args.sessionId) {
+    // Single-session mode
+    const sessionId = resolveSessionId(args.sessionId);
+    await startReviewServer([sessionId], "single");
+  } else {
+    // Multi-session mode — open all sessions
+    const sessionIds = listSessions();
+    if (sessionIds.length === 0) {
+      throw new Error("No sessions found. Run 'generate' first.");
+    }
+    await startReviewServer(sessionIds, "multi");
+  }
 }
 
 async function cmdRefine(args: CliArgs): Promise<void> {
