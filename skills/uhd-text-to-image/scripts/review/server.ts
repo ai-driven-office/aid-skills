@@ -41,8 +41,10 @@ function sanitizeSelection(raw: unknown, idx: number): SelectionEntry {
     if (raw.newPrompt !== undefined && typeof raw.newPrompt !== "string") {
       throw new Error(`Selection ${idx + 1}: 'newPrompt' must be a string`);
     }
-    if (raw.numImages !== undefined && (!Number.isInteger(raw.numImages) || raw.numImages <= 0 || raw.numImages > 6)) {
-      throw new Error(`Selection ${idx + 1}: 'numImages' must be an integer between 1 and 6`);
+    if (raw.numImages !== undefined) {
+      if (!Number.isInteger(raw.numImages) || (raw.numImages as number) <= 0 || (raw.numImages as number) > 6) {
+        throw new Error(`Selection ${idx + 1}: 'numImages' must be an integer between 1 and 6`);
+      }
     }
     entry.newPrompt = typeof raw.newPrompt === "string" ? raw.newPrompt : undefined;
     entry.numImages = typeof raw.numImages === "number" ? raw.numImages : 1;

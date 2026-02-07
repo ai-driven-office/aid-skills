@@ -125,7 +125,7 @@
       var sel = document.createElement("select");
       for (var n = 1; n <= 4; n++) {
         var opt = el("option", null, String(n));
-        opt.value = n;
+        opt.value = String(n);
         if (s.numImages === n) opt.selected = true;
         sel.appendChild(opt);
       }
