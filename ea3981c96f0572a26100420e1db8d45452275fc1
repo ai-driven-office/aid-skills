@@ -1,0 +1,35 @@
+skills/uhd-text-to-image/scripts/review/client.js
+  5dde9e425cca7950 1-265
+skills/uhd-text-to-image/scripts/review/page.html
+  5dde9e425cca7950 1-38
+skills/uhd-text-to-image/scripts/review/styles.css
+  5dde9e425cca7950 1-233
+skills/uhd-text-to-image/scripts/uhd.ts
+  5dde9e425cca7950 30
+skills/uhd-text-to-image/SKILL.md
+  5dde9e425cca7950 2-3,8,10,12-26,99,101,104-111,114,116,118,121-122,125,128-129,131-132,134-135,137-138,140-141,143-144,146-147,149-150,152-154,156-157,159-160,163,165,167,169,171-176,178,180-183,185,187
+skills/uhd-text-to-image/scripts/review/server.ts
+  5dde9e425cca7950 1-101
+skills/uhd-text-to-image/scripts/review/template.ts
+  5dde9e425cca7950 1-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "ea3981c96f0572a26100420e1db8d45452275fc1",
+  "prompts": {
+    "5dde9e425cca7950": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a155c98a-8ab1-41a5-a4fb-f94d52508063",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 1232,
+      "total_deletions": 417,
+      "accepted_lines": 1299,
+      "overriden_lines": 0
+    }
+  }
+}
