@@ -1,0 +1,27 @@
+skills/fal-text-to-image/SKILL.md
+  d0a318aa1e8e4106 2-3,10,12,14-22,24,26-28,30,32,34-37,39,41-44,46,48,50,52-55,57,61-65,69,71-81,84,86,88-89,92-94,98,101,104,106,110-114,118,121,124,126-127,131,134,136,140-142,147,150,153,156,158-159,161-163,165-166,168,171,174-199,201,203-213,215,217,219-224,226,228,230-236,238,240-242
+skills/aid-brand-guidelines/LICENSE.txt
+  d0a318aa1e8e4106 1-24
+skills/fal-text-to-image/reference/prompt-guide.md
+  d0a318aa1e8e4106 1-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "ce8c2c6f1d46a5cb3512797af4d1cab135b50240",
+  "prompts": {
+    "d0a318aa1e8e4106": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "569ab76d-6681-4d19-9333-10d029c55489",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Gunther Brunner <gunta85@gmail.com>",
+      "messages": [],
+      "total_additions": 310,
+      "total_deletions": 92,
+      "accepted_lines": 310,
+      "overriden_lines": 0
+    }
+  }
+}
