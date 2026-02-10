@@ -23,10 +23,6 @@ Each skill is self-contained in its own folder with a `SKILL.md` file containing
 | **Development & Technical** | MCP server building, web app testing, artifact building |
 | **Enterprise & Communication** | Internal comms, brand guidelines, document co-authoring |
 
-### UHD/UVX Image Suite
-
-The UHD image skills (`uhd-*`) have a dedicated overview at `skills/README-UVX.md`.
-
 ## Repository Structure
 
 ```
